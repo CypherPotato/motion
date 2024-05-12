@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<TargetFramework>net7.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<Authors>CypherPotato</Authors>
+		<Company>CypherPotato</Company>
+		<Product>MotionLang</Product>
+		<Description>An tiny LISP-like compiler for .NET environment</Description>
+		<AssemblyName>MotionLang</AssemblyName>
+		<RootNamespace>Motion</RootNamespace>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<PackageId>CypherPotato.MotionLang</PackageId>
+		<Title>MotionLang</Title>
+		<IncludeSymbols>True</IncludeSymbols>
+		<SymbolPackageFormat>symbols.nupkg</SymbolPackageFormat>
+	</PropertyGroup>
+
+
+	<PropertyGroup>
+		<Version>0.1.0-beta-1</Version>
+		<AssemblyVersion>0.1.0</AssemblyVersion>
+		<FileVersion>0.1.0</FileVersion>
+	</PropertyGroup>
+
+</Project>
