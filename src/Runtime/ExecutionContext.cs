@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -8,9 +9,19 @@ using Motion.Runtime.StandardLibrary;
 
 namespace Motion.Runtime;
 
+/// <summary>
+/// Represents the scope where the current <see cref="ExecutionContext"/> is being executed.
+/// </summary>
 public enum ExecutionContextScope
 {
+    /// <summary>
+    /// Specifies that the <see cref="ExecutionContext"/> is running in the global context.
+    /// </summary>
     Global,
+
+    /// <summary>
+    /// Specifies that an function owns the current <see cref="ExecutionContext"/>.
+    /// </summary>
     Function
 }
 
@@ -41,6 +52,16 @@ public class ExecutionContext
     /// Gets the user defined methods within this execution context.
     /// </summary>
     public MotionCollection<MotionUserFunction> UserFunctions { get; private set; }
+
+    /// <summary>
+    /// Gets the defined alises for this execution context.
+    /// </summary>
+    public MotionCollection<string> Aliases { get; private set; }
+
+    /// <summary>
+    /// Gets the defined using statements for this execution context.
+    /// </summary>
+    public IList<string> UsingStatements { get; private set; } = new List<string>();
 
     /// <summary>
     /// Gets the parent execution context, if any.
@@ -91,6 +112,7 @@ public class ExecutionContext
         Constants = new MotionCollection<object?>(this, true, false);
         Methods = new MethodCollection(this, true, false);
         UserFunctions = new MotionCollection<MotionUserFunction>(this, true, false);
+        Aliases = new MotionCollection<string>(this, true, false);
     }
 
     internal void ImportLibrary(IMotionLibrary library)
@@ -116,6 +138,8 @@ public class ExecutionContext
         this.Variables = executionContext.Variables;
         this.UserFunctions = executionContext.UserFunctions;
         this.Constants = executionContext.Constants;
+        this.Aliases = executionContext.Aliases;
+        this.UsingStatements = executionContext.UsingStatements;
     }
 
     /// <summary>
@@ -132,6 +156,15 @@ public class ExecutionContext
         }
 
         return find;
+    }
+
+    internal bool IsSymbolDefined(string symbol)
+    {
+        if (TryResolveAlias(symbol, out _)) return true;
+        if (TryResolveMethod(symbol, out _)) return true;
+        if (TryResolveUserFunction(symbol, out _)) return true;
+        if (TryResolveVariable(symbol, out _)) return true;
+        return false;
     }
 
     bool TryResolveVariable(string name, out object? result)
@@ -194,6 +227,59 @@ public class ExecutionContext
         }
 
         if (container.UserFunctions.TryGetValue(name, out result))
+        {
+            return true;
+        }
+        else
+        {
+            container = container.Parent;
+            goto tryAgain;
+        }
+    }
+
+    bool TryResolveAlias(string name, out string? result)
+    {
+        ExecutionContext? container = this;
+
+    tryAgain:
+        if (container == null)
+        {
+            // did not found an alias for it. try an using.
+
+            string? lastUsingMatched = null;
+            int matchedCount = 0;
+            for (int i = 0; i < UsingStatements.Count; i++)
+            {
+                string usingAlias = UsingStatements[i];
+                string sym = usingAlias + ':' + name;
+
+                if (TryResolveMethod(sym, out _) || TryResolveUserFunction(sym, out _) || TryResolveVariable(sym, out _))
+                {
+                    if (TryResolveMethod(name, out _) || TryResolveUserFunction(name, out _) || TryResolveVariable(name, out _))
+                    {
+                        throw new Exception($"ambiguous match between '{name}' and '{sym}'");
+                    }
+                    if (matchedCount == 1)
+                    {
+                        throw new Exception($"ambiguous match between '{lastUsingMatched}' and '{sym}'");
+                    }
+
+                    lastUsingMatched = sym;
+                    matchedCount++;
+                }
+            }
+
+            if (lastUsingMatched is not null)
+            {
+                result = lastUsingMatched;
+                return true;
+            }
+
+            result = null;
+            return false;
+        }
+
+        if (container.Aliases.TryGetValue(name, out result))
         {
             return true;
         }
@@ -302,6 +388,15 @@ public class ExecutionContext
                     {
                         string name = t.Content!.ToString()!;
 
+                        if (TryResolveAlias(name, out string? aliasedName))
+                        {
+                            if (aliasedName is null)
+                                throw new MotionException($"the alias name \"{name}\" points to an null reference alias.", t.Location, null);
+
+                            name = aliasedName;
+                        }
+                        ;
+
                         if (TryResolveMethod(name, out var methodValue))
                         {
                             // invoke in the parent token which probably holds the expression
@@ -349,6 +444,16 @@ public class ExecutionContext
                             }
 
                             string name = firstChildren.Content!.ToString()!;
+
+                            if (TryResolveAlias(name, out string? aliasedName))
+                            {
+                                if (aliasedName is null)
+                                    throw new MotionException($"the alias name \"{name}\" points to an null reference alias.", t.Location, null);
+
+                                name = aliasedName;
+                            }
+                            ;
+
                             if (TryResolveMethod(name, out var methodValue))
                             {
                                 return methodValue!.Invoke(new Atom(t, parent, this));

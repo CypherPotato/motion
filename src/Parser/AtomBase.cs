@@ -181,7 +181,7 @@ struct AtomBase
     }
 }
 
-public enum TokenType
+internal enum TokenType
 {
     // default types
     Undefined = 0,

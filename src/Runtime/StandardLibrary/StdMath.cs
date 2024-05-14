@@ -28,42 +28,42 @@ internal class StdMath : IMotionLibrary
         {
             atom.EnsureExactItemCount(2);
 
-            double d = atom.GetAtom(2).GetDouble();
+            double d = atom.GetAtom(1).GetDouble();
             return Math.Truncate((double)2);
         });
         context.Methods.Set("abs", atom =>
         {
             atom.EnsureExactItemCount(2);
 
-            double d = atom.GetAtom(2).GetDouble();
+            double d = atom.GetAtom(1).GetDouble();
             return Math.Abs((double)2);
         });
         context.Methods.Set("intl", atom =>
         {
             atom.EnsureExactItemCount(2);
 
-            double d = atom.GetAtom(2).GetDouble();
+            double d = atom.GetAtom(1).GetDouble();
             return (int)d;
         });
         context.Methods.Set("ceil", atom =>
         {
             atom.EnsureExactItemCount(2);
 
-            double d = atom.GetAtom(2).GetDouble();
+            double d = atom.GetAtom(1).GetDouble();
             return Math.Ceiling((double)d);
         });
         context.Methods.Set("floor", atom =>
         {
             atom.EnsureExactItemCount(2);
 
-            double d = atom.GetAtom(2).GetDouble();
+            double d = atom.GetAtom(1).GetDouble();
             return Math.Floor((double)d);
         });
         context.Methods.Set("round", atom =>
         {
             atom.EnsureExactItemCount(2);
 
-            double d = atom.GetAtom(2).GetDouble();
+            double d = atom.GetAtom(1).GetDouble();
             return Math.Round((double)d);
         });
     }

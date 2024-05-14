@@ -244,6 +244,14 @@ class StdCommon : IMotionLibrary
 
     public static void ApplyVarBlocks(ExecutionContext context)
     {
+        context.Methods.Add("defalias", (atom) =>
+        {
+            string aliasName = atom.GetAtom(1).GetSymbol();
+            string aliasValue = atom.GetAtom(2).GetSymbol();
+
+            atom.Context.GetScope(ExecutionContextScope.Function).Aliases.Add(aliasName, aliasValue);
+            return true;
+        });
         context.Methods.Add("defvar", (atom) =>
         {
             string varname = atom.GetAtom(1).GetSymbol();
@@ -308,6 +316,17 @@ class StdCommon : IMotionLibrary
             }
 
             return result;
+        });
+        context.Methods.Add("use", (atom) =>
+        {
+            string[] usings = atom.GetAtoms()
+                .Skip(1)
+                .Select(a => a.GetSymbol())
+                .ToArray();
+
+            foreach (string s in usings)
+                atom.Context.GetScope(ExecutionContextScope.Function).UsingStatements.Add(s);
+            return true;
         });
     }
 

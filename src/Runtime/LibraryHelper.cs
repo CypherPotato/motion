@@ -7,8 +7,18 @@ using System.Threading.Tasks;
 
 namespace Motion.Runtime;
 
+/// <summary>
+/// Represents an helper class which contains functions to use with <see cref="IMotionLibrary"/> objects.
+/// </summary>
 public static class LibraryHelper
 {
+    /// <summary>
+    /// Creates an <see cref="MotionMethod"/> from the specified delegate void.
+    /// </summary>
+    /// <param name="method">The method.</param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentException"></exception>
+    /// <exception cref="MotionException"></exception>
     public static MotionMethod Create(Delegate method)
     {
         return (atom) =>

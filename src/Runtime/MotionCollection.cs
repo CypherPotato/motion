@@ -1,24 +1,43 @@
 ﻿using Motion.Parser;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Motion.Runtime;
 
+/// <summary>
+/// Represents an runtime collection of items that is used by the Motion language.
+/// </summary>
+/// <typeparam name="TValue">The type of items.</typeparam>
 public class MotionCollection<TValue>
 {
     private Dictionary<string, TValue> _m = new Dictionary<string, TValue>(StringComparer.InvariantCultureIgnoreCase);
     private string? _namespace;
 
+    /// <summary>
+    /// Gets an boolean indicating if values can be inserted in this <see cref="MotionCollection{TValue}"/>.
+    /// </summary>
     public bool CanInsert { get; private set; }
+
+    /// <summary>
+    /// Gets an boolean indicating if values can be modified or removed in this <see cref="MotionCollection{TValue}"/>.
+    /// </summary>
     public bool CanEdit { get; private set; }
+
+    /// <summary>
+    /// Gets an array of keys on this <see cref="MotionCollection{TValue}"/>.
+    /// </summary>
     public string[] Keys { get => _m.Keys.ToArray(); }
 
+    /// <summary>
+    /// Gets the owner <see cref="ExecutionContext"/> of this collection.
+    /// </summary>
     public ExecutionContext Context { get; private set; }
 
-    public MotionCollection(ExecutionContext context, bool canInsert, bool canEdit)
+    internal MotionCollection(ExecutionContext context, bool canInsert, bool canEdit)
     {
         Context = context;
         CanInsert = canInsert;
@@ -48,34 +67,30 @@ public class MotionCollection<TValue>
         }
     }
 
-    public bool IsSymbolDefined(string name)
-    {
-        return Context.Variables.Contains(name)
-            || Context.Constants.Contains(name)
-            || Context.UserFunctions.Contains(name)
-            || Context.Methods.Contains(name);
-    }
-
+    /// <summary>
+    /// Gets an boolean indicating if the specified name is defined in this collection at this current scope.
+    /// </summary>
+    /// <param name="name">The symbol name.</param>
     public bool Contains(string name)
         => _m.ContainsKey(name);
 
-    public void Lock()
-    {
-        CanInsert = false;
-        CanEdit = false;
-    }
-
+    /// <summary>
+    /// Gets the value associated with the specified key.
+    /// </summary>
+    /// <param name="key">The name of the value to return.</param>
+    /// <param name="value">When this method returns, contains the value associated with the specified key, if the key is found; otherwise, the default value for the type of the value parameter. This parameter is passed uninitialized.</param>
+    /// <returns>true if this <see cref="MotionCollection{TValue}"/> contains an element with the specified key; otherwise, false.</returns>
     public bool TryGetValue(string key, out TValue? value)
     {
-        if (_m.ContainsKey(key))
-        {
-            value = _m[key];
-            return true;
-        }
-        value = default;
-        return false;
+        return _m.TryGetValue(key, out value);
     }
 
+    /// <summary>
+    /// Gets the value associated with the specified key.
+    /// </summary>
+    /// <param name="key">The defined symbol name in this collection.</param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
     public TValue Get(string key)
     {
         if (!Contains(key))
@@ -85,6 +100,12 @@ public class MotionCollection<TValue>
         return _m[key];
     }
 
+    /// <summary>
+    /// Adds or sets the specified name in this <see cref="MotionCollection{TValue}"/>.
+    /// </summary>
+    /// <param name="key">The symbol name.</param>
+    /// <param name="newValue">The object value.</param>
+    /// <exception cref="InvalidOperationException"></exception>
     public void Set(string key, TValue newValue)
     {
         string _key = FormatInsertingKey(key);
@@ -105,6 +126,12 @@ public class MotionCollection<TValue>
         }
     }
 
+    /// <summary>
+    /// Adds the specified name and value in this <see cref="MotionCollection{TValue}"/>.
+    /// </summary>
+    /// <param name="key">The symbol name.</param>
+    /// <param name="value">The object value.</param>
+    /// <exception cref="InvalidOperationException"></exception>
     public void Add(string key, TValue value)
     {
         string _key = FormatInsertingKey(key);
@@ -113,7 +140,7 @@ public class MotionCollection<TValue>
         {
             throw new InvalidOperationException("Cannot define other values of this kind in this context.");
         }
-        if (IsSymbolDefined(_key))
+        if (Context.IsSymbolDefined(_key))
         {
             throw new InvalidOperationException("This symbol is already defined in this context.");
         }

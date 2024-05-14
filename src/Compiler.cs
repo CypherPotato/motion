@@ -15,17 +15,38 @@ namespace Motion;
 /// </summary>
 public static class Compiler
 {
-    public const string MotionVersion = "v0.1-alpha-1";
+    /// <summary>
+    /// Gets the Motion version text.
+    /// </summary>
+    public const string MotionVersion = "v0.1-alpha-2";
+
+    /// <summary>
+    /// Compiles and runs the specified Motion code into their respective atomic values. This method throws an <see cref="MotionException"/> if the
+    /// specified code has syntax errors or if caught an exception while running the code.
+    /// </summary>
+    /// <param name="code">The Motion code to run.</param>
+    /// <param name="options">Optional. Defines the <see cref="MotionCompilerOptions"/> options to the compiler.</param>
+    /// <returns>An array of results of the returned atom values.</returns>
+    public static object?[] Evaluate(string code, MotionCompilerOptions? options = null)
+    {
+        var result = Compile(code, options);
+        if (!result.Success)
+        {
+            throw result.Error!;
+        }
+
+        return result.CreateContext().Evaluate();
+    }
 
     /// <summary>
     /// Compiles the specified Motion code into a representation that can be executed by the Motion interpreter.
     /// </summary>
     /// <param name="code">The Motion code to compile.</param>
-    /// <param name="options">Optional. Defines the <see cref="CompilerOptions"/> options to the compiler.</param>
+    /// <param name="options">Optional. Defines the <see cref="MotionCompilerOptions"/> options to the compiler.</param>
     /// <returns>A <see cref="CompilerResult"/> object containing the results of the compilation, including any errors or warnings.</returns>
-    public static CompilerResult Compile(string code, CompilerOptions? options = null)
+    public static CompilerResult Compile(string code, MotionCompilerOptions? options = null)
     {
-        CompilerOptions _options = options ?? new CompilerOptions();
+        MotionCompilerOptions _options = options ?? new MotionCompilerOptions();
         try
         {
             AtomBase[] tokens = new Tokenizer(code, _options).Tokenize().ToArray();
@@ -52,11 +73,14 @@ public static class Compiler
 /// <summary>
 /// Represents the results of a Motion code compilation.
 /// </summary>
-public class CompilerResult
+public sealed class CompilerResult
 {
     private AtomBase[] _tokens;
 
-    public CompilerOptions Options { get; private set; }
+    /// <summary>
+    /// Gets the specified <see cref="MotionCompilerOptions"/> used to compile this result.
+    /// </summary>
+    public MotionCompilerOptions Options { get; private set; }
 
     /// <summary>
     /// Gets a value indicating whether the compilation was successful.
@@ -68,7 +92,7 @@ public class CompilerResult
     /// </summary>
     public MotionException? Error { get; private set; }
 
-    internal CompilerResult(AtomBase[] tokens, bool success, MotionException? error, CompilerOptions options)
+    internal CompilerResult(AtomBase[] tokens, bool success, MotionException? error, MotionCompilerOptions options)
     {
         _tokens = tokens;
         Success = success;
@@ -91,6 +115,7 @@ public class CompilerResult
         context.ImportLibrary(new Runtime.StandardLibrary.StdString());
         context.ImportLibrary(new Runtime.StandardLibrary.StdConsole());
         context.ImportLibrary(new Runtime.StandardLibrary.StdRandom());
+        context.ImportLibrary(new Runtime.StandardLibrary.StdDebug());
 
         if (Options.AllowDotNetInvoke)
         {

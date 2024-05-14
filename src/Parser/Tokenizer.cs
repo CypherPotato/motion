@@ -10,9 +10,9 @@ class Tokenizer
 {
     private string? lastKeyword = null;
     private TextInterpreter Interpreter { get; set; }
-    private CompilerOptions CompilerOptions { get; set; }
+    private MotionCompilerOptions CompilerOptions { get; set; }
 
-    public Tokenizer(string code, CompilerOptions options)
+    public Tokenizer(string code, MotionCompilerOptions options)
     {
         string sanitized = Sanitizer.SanitizeCode(code, out _);
         Interpreter = new TextInterpreter(sanitized);
@@ -26,12 +26,12 @@ class Tokenizer
 
         if (Interpreter.CanRead())
         {
-            yield return TokenizeExpression();
+            yield return TokenizeExpression(0);
             goto readNext;
         }
     }
 
-    AtomBase TokenizeExpression()
+    AtomBase TokenizeExpression(int depth)
     {
         TextInterpreterSnapshot expStartSnapshot = Interpreter.TakeSnapshot(1);
         List<AtomBase> subTokens = new List<AtomBase>();
@@ -42,7 +42,14 @@ class Tokenizer
 
         if (c != AtomBase.Ch_ExpressionStart)
         {
-            throw new MotionException("unexpected char: " + c, Interpreter);
+            if (!CompilerOptions.AllowInlineDeclarations)
+            {
+                throw new MotionException("expected an atom initialization char '('. got " + c, Interpreter);
+            }
+            else
+            {
+                Interpreter.Move(-1);
+            }
         }
 
         Interpreter.SkipIgnoreTokens();
@@ -70,7 +77,7 @@ class Tokenizer
             }
 
             Interpreter.Move(-1);
-            AtomBase subExpression = TokenizeExpression();
+            AtomBase subExpression = TokenizeExpression(depth + 1);
             subTokens.Add(subExpression);
             goto readNext;
         }
@@ -88,7 +95,22 @@ class Tokenizer
         }
         else if (hit == '\0')
         {
-            throw new MotionException("unclosed expression block.", expStartSnapshot, null);
+            if (depth == 0 && CompilerOptions.AllowInlineDeclarations)
+            {
+                expStartSnapshot.Length = Interpreter.Position - expStartSnapshot.Position;
+                expression.Location = expStartSnapshot;
+                if (content.Length > 0)
+                {
+                    AtomBase item = TokenizePart(ref nextContentSnapshot, content);
+                    AddTokenToExpression(subTokens, emptyKeywords, ref item);
+                }
+
+                goto finish;
+            }
+            else
+            {
+                throw new MotionException("unclosed expression block.", expStartSnapshot, null);
+            }
         }
         else
         {

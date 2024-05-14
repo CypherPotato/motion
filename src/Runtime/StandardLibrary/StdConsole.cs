@@ -8,10 +8,12 @@ namespace Motion.Runtime.StandardLibrary;
 
 internal class StdConsole : IMotionLibrary
 {
-    public string? Namespace => null;
+    public string? Namespace => "console";
 
     public void ApplyMembers(ExecutionContext context)
     {
+        context.Aliases.Add("write", "console:write");
+
         context.Methods.Add("write-line", (atom) =>
         {
             if (atom.ItemCount == 1)
