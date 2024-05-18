@@ -1,10 +1,8 @@
-﻿# Motion Language
+﻿The **Motion Language** is an experimental language strongly inspired by LISP. It has a simple syntax and is interpreted on the .NET runtime. Its purpose is to function as a functional language for transforming information. Motion is fully integrated with the .NET environment and should only be called from managed code.
 
-Motion é uma linguagem experimental, fortemente inspirada em LISP, com uma sintaxe simples, que é interpretada em cima do runtime do .NET. Seu objetivo é funcionar como uma linguagem funcional e transformar informação. É totalmente integrada ao ambiente .NET e deve ser chamada apenas por código gerenciado.
+However, it's important to note that Motion is not independent. You shouldn't compile Motion code into a fully complex or self-sufficient program. By default, some basic functions are defined in Motion. These functions do not expose the Motion code to the runtime without the user's permission. All operations within the Motion interpreter run in a sandbox defined by the user, with functions limited to what the user defines.
 
-Motion não é independente, portanto, você não deve compilar um código em Motion para um programa totalmente complexo ou autossuficiente. Por padrão, algumas funções básicas são definidas em Motion. Essas funções não expõe o código Motion ao runtime sem a permissão do usuário. Toda operação dentro do interpretador do Motion é executada em um sandbox definido pelo usuário com funções limitadas ao que o usuário define.
-
-Uma breve apresentação de um código-fonte Motion:
+Here's a brief example of Motion source code:
 
 ```lisp
 (let ((name1 "Alice")
@@ -13,28 +11,28 @@ Uma breve apresentação de um código-fonte Motion:
         " are friends!"))
 ```
 
-O que pode ser invocado no código com:
+This code can be invoked in C# as follows:
 
-```cs
-string code = """
-    (let ((name1 "Alice")
-          (name2 "Bob"))
-        (str:concat name1 " and " name2
-            " are friends!"))
-    """;
+```csharp
+string code = @"
+    (let ((name1 ""Alice"")
+          (name2 ""Bob""))
+        (str:concat name1 "" and "" name2
+            "" are friends!""))
+    ";
 
 var compilationResult = Motion.Compiler.Compile(code);
 if (!compilationResult.Success)
 {
-    // failed to compile
+    // Failed to compile
     Console.WriteLine(compilationResult.Error?.ToString());
 }
 
-// create an execution context on the above code
+// Create an execution context for the above code
 var context = compilationResult.CreateContext();
 var result = context.Evaluate().LastOrDefault();
 
 Console.WriteLine(result);
 ```
 
-E os objetos de resultado podem ser interpolados diretamente no código que está invocando o mesmo. É possível compartilhar variáveis, acessar constantes, definir funções customizadas e mais. Motion não deve ser confundido com LISP. Suas funções nativas são inspiradas em LISP, mas não há garantia que será executado exatamente como ocorre em LISP. 
+In this example, the Motion code concatenates the names "Alice" and "Bob" to create the string "Alice and Bob are friends!"¹. The C# code demonstrates how to compile and execute this Motion code snippet.

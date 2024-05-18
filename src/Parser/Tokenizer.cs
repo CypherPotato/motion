@@ -38,9 +38,21 @@ class Tokenizer
         List<string> emptyKeywords = new List<string>();
         AtomBase expression = new AtomBase(expStartSnapshot, TokenType.Expression);
 
+        bool isInlineExpression = false;
         Interpreter.Read(out char c);
 
-        if (c != AtomBase.Ch_ExpressionStart)
+        if (c == AtomBase.Ch_ExpressionInlineExpressionStart)
+        {
+            if (depth != 0)
+            {
+                throw new MotionException("inline expressions must be in the first level of code" + c, Interpreter);
+            }
+            else
+            {
+                isInlineExpression = true;
+            }
+        }
+        else if (c != AtomBase.Ch_ExpressionStart)
         {
             if (!CompilerOptions.AllowInlineDeclarations)
             {
@@ -60,7 +72,19 @@ class Tokenizer
 
         if (char.IsWhiteSpace(hit))
         {
-            if (content.Length > 0)
+            if (isInlineExpression && hit == '\n')
+            {
+                expStartSnapshot.Length = Interpreter.Position - expStartSnapshot.Position;
+                expression.Location = expStartSnapshot;
+                if (content.Length > 0)
+                {
+                    AtomBase item = TokenizePart(ref nextContentSnapshot, content);
+                    AddTokenToExpression(subTokens, emptyKeywords, ref item);
+                }
+
+                goto finish;
+            }
+            else if (content.Length > 0)
             {
                 AtomBase item = TokenizePart(ref nextContentSnapshot, content);
                 AddTokenToExpression(subTokens, emptyKeywords, ref item);

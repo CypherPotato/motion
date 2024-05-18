@@ -1,8 +1,7 @@
 {
   "profiles": {
     "MotionCLI": {
-      "commandName": "Project",
-      "commandLineArgs": "--no-colors"
+      "commandName": "Project"
     }
   }
 }

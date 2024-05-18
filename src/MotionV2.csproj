@@ -14,6 +14,7 @@
 		<Description>An tiny LISP-like compiler for .NET environment</Description>
 		<AssemblyName>MotionLang</AssemblyName>
 		<RootNamespace>Motion</RootNamespace>
+		<IsAotCompatible>true</IsAotCompatible>
 	</PropertyGroup>
 
 	<PropertyGroup>

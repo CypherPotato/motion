@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Motion.Parser;
@@ -119,7 +120,7 @@ public class ExecutionContext
     {
         Methods.StartNamespace(library.Namespace);
         Constants.StartNamespace(library.Namespace);
-
+         
         library.ApplyMembers(this);
 
         Methods.EndNamespace();
@@ -203,8 +204,9 @@ public class ExecutionContext
             return false;
         }
 
-        if (container.Methods.TryGetValue(name, out result))
+        if (container.Methods.TryGetValue(name, out var del))
         {
+            result = LibraryHelper.Create(del!);
             return true;
         }
         else

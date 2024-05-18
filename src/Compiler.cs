@@ -111,15 +111,12 @@ public sealed class CompilerResult
         var context = Runtime.ExecutionContext.CreateBaseContext(_tokens);
 
         context.ImportLibrary(new Runtime.StandardLibrary.StdCommon());
-        context.ImportLibrary(new Runtime.StandardLibrary.StdMath());
         context.ImportLibrary(new Runtime.StandardLibrary.StdString());
         context.ImportLibrary(new Runtime.StandardLibrary.StdConsole());
-        context.ImportLibrary(new Runtime.StandardLibrary.StdRandom());
-        context.ImportLibrary(new Runtime.StandardLibrary.StdDebug());
 
         if (Options.AllowDotNetInvoke)
         {
-            context.ImportLibrary(new Runtime.StandardLibrary.StdNet());
+            //context.ImportLibrary(new Runtime.StandardLibrary.StdNet());
         }
 
         foreach (IMotionLibrary lib in Options.Libraries)

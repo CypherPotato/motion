@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -21,46 +23,116 @@ public static class LibraryHelper
     /// <exception cref="MotionException"></exception>
     public static MotionMethod Create(Delegate method)
     {
-        return (atom) =>
+        return (atom) => LibraryConverter(method, atom);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    internal static object? LibraryConverter(Delegate method, Atom atom)
+    {
+        var methodInfo = method.GetMethodInfo();
+        int paramOffset = 0;
+        List<object?> parameterObjects = new List<object?>();
+        ParameterInfo[] arguments = methodInfo.GetParameters();
+
+        object?[]? paramsArrayInstance = null;
+        int paramsIndex = -1;
+        object?[] inAtoms = new object[atom.ItemCount - 1];
+        int requiredParams = 0;
+
+        for (int i = 0; i < arguments.Length; i++)
         {
-            var methodInfo = method.GetMethodInfo();
-            ParameterInfo[] arguments = methodInfo.GetParameters();
+            var param = arguments[i];
 
-            object?[] inAtoms = new object[atom.ItemCount - 1];
-            int requiredParams = 0;
-
-            for (int i = 0; i < arguments.Length; i++)
+            if (param.ParameterType == typeof(Atom) && param.Name?.Equals("self", StringComparison.CurrentCultureIgnoreCase) == true)
             {
-                if (!arguments[i].IsOptional)
+                if (i != 0)
                 {
-                    requiredParams++;
+                    throw new ArgumentException("The Self atom parameter must be the first parameter of the delegate.");
                 }
-            }
 
-            if (inAtoms.Length < requiredParams)
-            {
-                throw new ArgumentException($"This method requires at least {requiredParams} parameters. Got {inAtoms.Length} instead.");
+                parameterObjects.Add(atom);
+                paramOffset++;
             }
-            else if (inAtoms.Length > arguments.Length)
+            else if (param.GetCustomAttribute<ParamArrayAttribute>() != null)
             {
-                throw new ArgumentException($"Too many arguments. This method only expects {arguments.Length} with required and optional parameters, but got {inAtoms.Length} instead.");
+                paramsIndex = i;
+                paramsArrayInstance = new object?[inAtoms.Length - i];
+                break;
             }
+            else if (!arguments[i].IsOptional)
+            {
+                requiredParams++;
+            }
+        }
 
-            for (int i = 0; i < inAtoms.Length; i++)
+        if (inAtoms.Length < requiredParams)
+        {
+            throw new ArgumentException($"This method requires at least {requiredParams} parameters. Got {inAtoms.Length} instead.");
+        }
+        else if (paramsIndex == -1 && inAtoms.Length > arguments.Length)
+        {
+            throw new ArgumentException($"Too many arguments. This method only expects {arguments.Length} with required and optional parameters, but got {inAtoms.Length} instead.");
+        }
+
+        for (int i = 0; i < inAtoms.Length; i++)
+        {
+            if (paramsIndex >= 0 && i >= paramsIndex)
             {
-                var argType = arguments[i].ParameterType;
                 var at = atom.GetAtom(i + 1);
                 object? result = at.Nullable()?.GetObject();
 
-                if (result is not null && result.GetType().IsAssignableTo(argType) == false)
+                // is it the last parameter, and is the last parameter an parameter array, and is the object
+                // an collection?
+                if (result is ICollection icol && i == paramsIndex && i == inAtoms.Length - 1)
                 {
-                    throw new MotionException($"Cannot convert type {result.GetType().FullName} at argument ^{i + 1} to {argType.FullName}. Are you missing a cast?", at);
+                    if (paramsArrayInstance!.Length < icol.Count)
+                    {
+                        Array.Resize(ref paramsArrayInstance, icol.Count);
+                    }
+                    icol.CopyTo(paramsArrayInstance, 0);
+                }
+                else
+                {
+                    paramsArrayInstance![i - paramsIndex] = result;
+                }
+            }
+            else
+            {
+                if (paramsIndex >= 0 && paramOffset + i >= paramsIndex)
+                {
+                    continue;
                 }
 
-                inAtoms[i] = result;
-            }
+                var argType = arguments[paramOffset + i].ParameterType;
+                var at = atom.GetAtom(i + 1);
+                object? result;
 
-            return method.DynamicInvoke(inAtoms);
-        };
+                if (argType == typeof(Symbol))
+                {
+                    result = new Symbol(at.GetSymbol());
+                }
+                else if (argType == typeof(Atom))
+                {
+                    result = at;
+                }
+                else
+                {
+                    result = at.Nullable()?.GetObject();
+                    if (result is not null && result.GetType().IsAssignableTo(argType) == false)
+                    {
+                        throw new MotionException($"Cannot convert type {result.GetType().FullName} at argument {i + 1} to {argType.FullName}. Are you missing a cast?", at);
+                    }
+                }
+
+                parameterObjects.Add(result);
+            }
+        }
+
+        if (paramsIndex >= 0)
+        {
+            parameterObjects.Add(paramsArrayInstance);
+        }
+
+        return method.DynamicInvoke(parameterObjects.ToArray());
     }
 }

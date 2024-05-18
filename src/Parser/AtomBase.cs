@@ -8,12 +8,13 @@ namespace Motion.Parser;
 
 struct AtomBase
 {
+    public static readonly char Ch_ExpressionInlineExpressionStart = '@';
     public static readonly char Ch_ExpressionStart = '(';
     public static readonly char Ch_ExpressionEnd = ')';
     public static readonly char Ch_StringQuote = '"';
 
     public static readonly char[] AllowedFirstSymbolChars = new char[] {
-        '%', '$', '@'
+        '%', '$'
     };
 
     public static readonly AtomBase Undefined = new AtomBase(default, TokenType.Undefined);

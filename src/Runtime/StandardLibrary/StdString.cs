@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,202 +12,99 @@ internal class StdString : IMotionLibrary
 
     public void ApplyMembers(ExecutionContext context)
     {
-        context.Methods.Add("concat", (atom) =>
+        context.Aliases.Add("concat", "str:concat");
+        ;
+        context.Methods.Add("concat", Concat);
+        context.Methods.Add("make-upper-case", MkUpperCase);
+        context.Methods.Add("make-lower-case", MkLowerCase);
+        context.Methods.Add("normalize", Normalize);
+        context.Methods.Add("trim", Trim);
+        context.Methods.Add("trim-end", TrimEnd);
+        context.Methods.Add("trim-start", TrimStart);
+        context.Methods.Add("explode", Explode);
+        context.Methods.Add("implode", Implode);
+        context.Methods.Add("pad-left", PadLeft);
+        context.Methods.Add("pad-right", PadRight);
+        context.Methods.Add("cmp", Cmp);
+        context.Methods.Add("contains", Contains);
+        context.Methods.Add("ends-with", EndsWith);
+        context.Methods.Add("starts-with", StartsWith);
+        context.Methods.Add("len", Len);
+        context.Methods.Add("index-of", IndexOf);
+        context.Methods.Add("last-index-of", LastIndexOf);
+        context.Methods.Add("coalesce", Coalesce);
+        context.Methods.Add("repeat", Repeat);
+        context.Methods.Add("substr", Substr);
+    }
+
+    string Concat(params object?[] items) => string.Join("", items);
+    string? MkUpperCase(string? s) => s?.ToUpper();
+    string? MkLowerCase(string? s) => s?.ToLower();
+    string? Normalize(string? s) => s?.Normalize();
+    string? Trim(string? s) => s?.Trim();
+    string? TrimEnd(string? s) => s?.TrimEnd();
+    string? TrimStart(string? s) => s?.TrimStart();
+    string[] Explode(string sep, string s) => s.Split(sep);
+    string Implode(string sep, params object?[] values) => string.Join(sep, values);
+    string PadLeft(string s, char pad, int count) => s.PadLeft(count, pad);
+    string PadRight(string s, char pad, int count) => s.PadRight(count, pad);
+    int Cmp(Atom self, string? a, string? b) => string.Compare(a, b, self.HasKeyword("ignore-case") ? StringComparison.CurrentCultureIgnoreCase : StringComparison.Ordinal);
+    bool Contains(Atom self, string a, string b) => a.Contains(b, self.HasKeyword("ignore-case") ? StringComparison.CurrentCultureIgnoreCase : StringComparison.Ordinal);
+    bool EndsWith(Atom self, string a, string b) => a.EndsWith(b, self.HasKeyword("ignore-case") ? StringComparison.CurrentCultureIgnoreCase : StringComparison.Ordinal);
+    bool StartsWith(Atom self, string a, string b) => a.StartsWith(b, self.HasKeyword("ignore-case") ? StringComparison.CurrentCultureIgnoreCase : StringComparison.Ordinal);
+    int Len(string? s) => s?.Length ?? 0;
+    int IndexOf(Atom self, string s, string term) => s.IndexOf(term, self.HasKeyword("ignore-case") ? StringComparison.CurrentCultureIgnoreCase : StringComparison.Ordinal);
+    int LastIndexOf(Atom self, string s, string term) => s.LastIndexOf(term, self.HasKeyword("ignore-case") ? StringComparison.CurrentCultureIgnoreCase : StringComparison.Ordinal);
+
+    string? Coalesce(params object?[] values)
+    {
+        for (int i = 0; i < values.Length; i++)
         {
-            StringBuilder result = new StringBuilder();
-            foreach (Atom t in atom.GetAtoms().Skip(1))
+            string? s = values[i]?.ToString();
+            if (!string.IsNullOrEmpty(s))
             {
-                result.Append(t.Nullable()?.GetString());
+                return s;
             }
-            return result.ToString();
-        });
-        context.Methods.Add("repeat", (atom) =>
+        }
+        return null;
+    }
+
+    string Repeat(string? s, int count)
+    {
+        if (s is null) return "";
+        StringBuilder sb = new StringBuilder(s.Length * count);
+
+        for (int i = 0; i < count; i++)
+            sb.Append(s);
+
+        return sb.ToString();
+    }
+
+    string Substr(Atom self)
+    {
+        string s = self.GetAtom(1).GetString();
+        if (self.ItemCount == 3)
         {
-            string? s = atom.GetAtom(1).Nullable()?.GetString();
-            int count = atom.GetAtom(2).GetInt32();
+            int startPos = self.GetAtom(2).GetInt32();
+            int n = Math.Abs(startPos);
 
-            StringBuilder result = new StringBuilder();
-            for (int i = 0; i < count; i++)
+            if (n > s.Length)
+                return "";
+
+            if (startPos < 0)
             {
-                result.Append(s);
+                return s.Substring(s.Length - n);
             }
-
-            return result.ToString();
-        });
-        context.Methods.Add("make-upper-case", (atom) => atom.GetAtom(1).Nullable()?.GetString().ToUpper());
-        context.Methods.Add("make-lower-case", (atom) => atom.GetAtom(1).Nullable()?.GetString().ToLower());
-        context.Methods.Add("normalize", (atom) => atom.GetAtom(1).Nullable()?.GetString().Normalize());
-        context.Methods.Add("trim", (atom) => atom.GetAtom(1).Nullable()?.GetString().Trim());
-        context.Methods.Add("trim-end", (atom) => atom.GetAtom(1).Nullable()?.GetString().TrimEnd());
-        context.Methods.Add("trim-start", (atom) => atom.GetAtom(1).Nullable()?.GetString().TrimStart());
-        context.Methods.Add("len", (atom) => atom.GetAtom(1).Nullable()?.GetString().Length);
-        context.Methods.Add("substr", (atom) =>
+            else
+                return s.Substring(startPos);
+        }
+        else if (self.ItemCount == 4)
         {
-            string s = atom.GetAtom(1).GetString();
-            if (atom.ItemCount == 3)
-            {
-                int startPos = atom.GetAtom(2).GetInt32();
-                int n = Math.Abs(startPos);
+            int startPos = self.GetAtom(2).GetInt32();
+            int length = self.GetAtom(3).GetInt32();
+            return s.Substring(startPos, length);
+        }
 
-                if (n > s.Length)
-                    return "";
-
-                if (startPos < 0)
-                {
-                    return s.Substring(s.Length - n);
-                }
-                else
-                    return s.Substring(startPos);
-            }
-            else if (atom.ItemCount == 4)
-            {
-                int startPos = atom.GetAtom(2).GetInt32();
-                int length = atom.GetAtom(3).GetInt32();
-                return s.Substring(startPos, length);
-            }
-
-            throw new InvalidOperationException($"this method expects only 2 or 3 parameters.");
-        });
-        context.Methods.Add("icmp", (atom) =>
-        {
-            string a = atom.GetAtom(1).GetString();
-            string? b = atom.GetAtom(2).Nullable()?.GetObject().ToString();
-
-            return string.Compare(a, b, true) == 0;
-        });
-        context.Methods.Add("icontains", (atom) =>
-        {
-            string a = atom.GetAtom(1).GetString();
-            string? b = atom.GetAtom(2).Nullable()?.GetObject().ToString();
-
-            if (b == null)
-                return false;
-
-            return a.Contains(b, StringComparison.InvariantCultureIgnoreCase);
-        });
-        context.Methods.Add("index-of", (atom) =>
-        {
-            string s = atom.GetAtom(1).GetString();
-            if (atom.ItemCount == 3)
-            {
-                string S = atom.GetAtom(2).GetString();
-                return s.IndexOf(S);
-            }
-            else if (atom.ItemCount == 4)
-            {
-                string S = atom.GetAtom(2).GetString();
-                int startPos = atom.GetAtom(3).GetInt32();
-                return s.IndexOf(S, startPos);
-            }
-
-            throw new InvalidOperationException($"this method expects only 2 or 3 parameters.");
-        });
-        context.Methods.Add("last-index-of", (atom) =>
-        {
-            string s = atom.GetAtom(1).GetString();
-            if (atom.ItemCount == 3)
-            {
-                string S = atom.GetAtom(2).GetString();
-                return s.LastIndexOf(S);
-            }
-            else if (atom.ItemCount == 4)
-            {
-                string S = atom.GetAtom(2).GetString();
-                int startPos = atom.GetAtom(3).GetInt32();
-                return s.LastIndexOf(S, startPos);
-            }
-
-            throw new InvalidOperationException($"this method expects only 2 or 3 parameters.");
-        });
-        context.Methods.Add("fmt", (atom) =>
-        {
-            object?[] args = atom.GetAtoms()
-                .Skip(2)
-                .Select(a => a.GetObject())
-                .ToArray();
-
-            return string.Format(atom.GetAtom(1).GetString(), args);
-        });
-        context.Methods.Add("explode", (atom) =>
-        {
-            string s = atom.GetAtom(1).GetString();
-
-            if (atom.ItemCount == 2)
-            {
-                return s.ToCharArray();
-            }
-            else if (atom.ItemCount == 3)
-            {
-                string separator = atom.GetAtom(2).GetString();
-                return s.Split(separator);
-            }
-
-            throw new InvalidOperationException($"this method expects only 2 or 3 parameters.");
-        });
-        context.Methods.Add("implode", (atom) =>
-        {
-            if (atom.ItemCount == 2)
-            {
-                IEnumerable items = (IEnumerable)atom.GetAtom(1).GetObject();
-                StringBuilder sb = new StringBuilder();
-
-                foreach (object? s in items)
-                    sb.Append(s);
-
-                return sb.ToString();
-            }
-            else if (atom.ItemCount == 3)
-            {
-                IEnumerable items = (IEnumerable)atom.GetAtom(2).GetObject();
-                string separator = atom.GetAtom(1).GetString();
-                StringBuilder sb = new StringBuilder();
-
-                foreach (object? s in items)
-                {
-                    if (s != null)
-                    {
-                        sb.Append(s);
-                        sb.Append(separator);
-                    }
-                }
-
-                sb.Length -= separator.Length;
-                return sb.ToString();
-            }
-
-            throw new InvalidOperationException($"this method expects only 2 or 3 parameters.");
-        });
-        context.Methods.Add("coalesce", (atom) =>
-        {
-            for (int i = 1; i < atom.ItemCount; i++)
-            {
-                object? data = atom.GetAtom(i).Nullable()?.GetObject();
-                if (!string.IsNullOrEmpty(data?.ToString()))
-                {
-                    return data;
-                }
-            }
-            return null;
-        });
-        context.Methods.Add("pad-left", (atom) =>
-        {
-            atom.EnsureExactItemCount(4);
-
-            string s = atom.GetAtom(1).GetString();
-            char pad = atom.GetAtom(2).GetChar();
-            int count = atom.GetAtom(3).GetInt32();
-
-            return s.PadLeft(count, pad);
-        });
-        context.Methods.Add("pad-right", (atom) =>
-        {
-            atom.EnsureExactItemCount(4);
-
-            string s = atom.GetAtom(1).GetString();
-            char pad = atom.GetAtom(2).GetChar();
-            int count = atom.GetAtom(3).GetInt32();
-
-            return s.PadRight(count, pad);
-        });
+        throw new InvalidOperationException($"this method expects only 2 or 3 parameters.");
     }
 }
