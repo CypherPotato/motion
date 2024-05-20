@@ -38,6 +38,12 @@ public static class Compiler
         return result.CreateContext().Evaluate();
     }
 
+    /// <summary>
+    /// Compiles the specified list of <see cref="MotionSource"/> into a representation that can be executed by the Motion interpreter.
+    /// </summary>
+    /// <param name="sources">An list of <see cref="MotionSource"/> to compile.</param>
+    /// <param name="options">Optional. Defines the <see cref="MotionCompilerOptions"/> options to the compiler.</param>
+    /// <returns>A <see cref="CompilerResult"/> object containing the results of the compilation, including any errors or warnings.</returns>
     public static CompilerResult Compile(IEnumerable<MotionSource> sources, MotionCompilerOptions? options = null)
     {
         MotionCompilerOptions _options = options ?? new MotionCompilerOptions();
@@ -91,11 +97,26 @@ public static class Compiler
     }
 }
 
+/// <summary>
+/// Represents an Motion source code.
+/// </summary>
 public sealed class MotionSource
 {
+    /// <summary>
+    /// Gets or sets the file name of this Motion source code.
+    /// </summary>
     public string? Filename { get; set; }
+
+    /// <summary>
+    /// Gets or sets the Motion source code contents.
+    /// </summary>
     public string Source { get; set; }
 
+    /// <summary>
+    /// Creates an new <see cref="MotionSource"/> instance with specified parameters.
+    /// </summary>
+    /// <param name="filename">The file name of this Motion source code.</param>
+    /// <param name="source">The Motion source code contents.</param>
     public MotionSource(string? filename, string source)
     {
         Filename = filename;

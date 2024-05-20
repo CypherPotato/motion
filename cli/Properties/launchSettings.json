@@ -1,7 +1,8 @@
 {
   "profiles": {
     "MotionCLI": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "commandLineArgs": "-f code.lisp"
     }
   }
 }

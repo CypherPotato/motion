@@ -11,19 +11,13 @@ internal static class Interactive
 {
     public static void Init()
     {
-        Motion.Runtime.ExecutionContext? lastContext = null;
         StringBuilder buildingExpression = new StringBuilder();
         while (true)
         {
             Console.Write(">>> ");
             string? data = Console.ReadLine();
 
-            if (data == "/reset")
-            {
-                lastContext = null;
-                continue;
-            }
-            else if (data == "/exit")
+            if (data == "/exit")
             {
                 break;
             }
@@ -37,15 +31,38 @@ internal static class Interactive
 
             string code = buildingExpression.ToString();
 
+            bool hadFileImportingErrors = false;
+            List<MotionSource> sources = new List<MotionSource>();
+            foreach (string file in Program.ImportedFiles)
+            {
+                string fpath = Path.GetFullPath(file);
+                if (!File.Exists(fpath))
+                {
+                    Console.WriteLine($"error: the specified importing file {file} couldn't be found.");
+                    hadFileImportingErrors = true;
+                    break;
+                }
+                sources.Add(new MotionSource(fpath, File.ReadAllText(fpath)));
+            }
+
+            if (hadFileImportingErrors) 
+                continue;
+
             if (Compiler.GetParenthesisIndex(code) <= 0)
             {
                 Stopwatch sw = new Stopwatch();
                 sw.Start();
                 buildingExpression.Clear();
-                var compilationResult = Compiler.Compile(code, new MotionCompilerOptions()
+
+                sources.Add(new MotionSource(null, code));
+
+                var compilationResult = Compiler.Compile(sources, new MotionCompilerOptions()
                 {
-                    AllowDotNetInvoke = true,
-                    AllowInlineDeclarations = true
+                    Features =
+                          CompilerFeature.AllowParenthesislessCode
+                        | CompilerFeature.EnableConsoleMethods
+                        | CompilerFeature.TraceUserFunctionsCalls
+                        | CompilerFeature.TraceUserFunctionsVariables
                 });
 
                 if (compilationResult.Success)
@@ -53,24 +70,11 @@ internal static class Interactive
                     try
                     {
                         var context = compilationResult.CreateContext();
-                        context.ImportState(lastContext);
 
                         var result = context.Evaluate();
                         sw.Stop();
 
-                        lastContext = context;
-
-                        if (result.Length == 0)
-                        {
-                            Console.WriteLine(result);
-                        }
-                        else
-                        {
-                            foreach (var item in result)
-                            {
-                                Console.WriteLine("<- " + item);
-                            }
-                        }
+                        Console.WriteLine(result.LastOrDefault());
 
                         if (Program.Verbose)
                         {
