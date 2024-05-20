@@ -13,16 +13,9 @@ namespace Motion;
 public class MotionCompilerOptions
 {
     /// <summary>
-    /// Gets or sets an boolean indicating if the motion code can use (net:*) methods used for creating
-    /// .NET runtime methods and members.
+    /// Gets or sets special compiler flags and features to the Motion compiler.
     /// </summary>
-    public bool AllowDotNetInvoke { get; set; } = false;
-
-    /// <summary>
-    /// Gets or sets an boolean indicating if instructions without parenthesis should be allowed at the first
-    /// level of the code.
-    /// </summary>
-    public bool AllowInlineDeclarations { get; set; } = false; 
+    public CompilerFeature Features { get; set; }
 
     /// <summary>
     /// Gets or sets an collection of <see cref="IMotionLibrary"/> used to compile this code.

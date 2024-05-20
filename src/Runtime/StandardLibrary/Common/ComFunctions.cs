@@ -14,6 +14,12 @@ internal class ComFunctions : IMotionLibrary
     {
         context.Methods.Add("defun", Defun);
         context.Methods.Add("import", Import);
+        context.Methods.Add("get-trace", GetTrace);
+    }
+
+    string GetTrace(Atom self)
+    {
+        return self.Context.traceWriter.ToString();
     }
 
     void Import(Atom self, Symbol name)

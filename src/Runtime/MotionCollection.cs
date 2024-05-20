@@ -14,7 +14,7 @@ namespace Motion.Runtime;
 /// <typeparam name="TValue">The type of items.</typeparam>
 public class MotionCollection<TValue>
 {
-    private Dictionary<string, TValue> _m = new Dictionary<string, TValue>(StringComparer.InvariantCultureIgnoreCase);
+    internal Dictionary<string, TValue> _m = new Dictionary<string, TValue>(StringComparer.InvariantCultureIgnoreCase);
     private string? _namespace;
 
     /// <summary>
@@ -146,5 +146,10 @@ public class MotionCollection<TValue>
         }
 
         _m.Add(_key, value);
+    }
+
+    internal void InternalSet(string key, TValue value)
+    {
+        _m[key] = value;
     }
 }

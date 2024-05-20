@@ -24,6 +24,8 @@ internal class BooleanOperators : IMotionLibrary
         context.Methods.Add("or", Or);
         context.Methods.Add("xor", Xor);
         context.Methods.Add("not", Not);
+        context.Methods.Add("if", If);
+        context.Methods.Add("if-not", IfNot);
 
         context.Methods.Add("<", (dynamic A, dynamic B) => A < B);
         context.Methods.Add("<=", (dynamic A, dynamic B) => A <= B);
@@ -31,6 +33,8 @@ internal class BooleanOperators : IMotionLibrary
         context.Methods.Add(">=", (dynamic A, dynamic B) => A >= B);
 
         context.Methods.Add("zerop", Zerop);
+        context.Methods.Add("is-null", IsNull);
+        context.Methods.Add("is-not-null", IsNotNull);
     }
 
     bool Eq(object? a, object? b)
@@ -75,5 +79,79 @@ internal class BooleanOperators : IMotionLibrary
     bool Zerop(dynamic a)
     {
         return a == 0;
+    }
+
+    bool IsNull(object? b)
+    {
+        return b is null;
+    }
+
+    bool IsNotNull(object? b)
+    {
+        return b is not null;
+    }
+
+    object? IfNot(Atom self)
+    {
+        self.EnsureExactItemCount(3, 4);
+        bool condition = self.GetAtom(1).GetBoolean();
+        if (self.ItemCount == 3)
+        {
+            if (!condition)
+            {
+                return self.GetAtom(2).Nullable()?.GetObject();
+            }
+            else
+            {
+                return null;
+            }
+        }
+        else if (self.ItemCount == 4)
+        {
+            if (!condition)
+            {
+                return self.GetAtom(2).Nullable()?.GetObject();
+            }
+            else
+            {
+                return self.GetAtom(3).Nullable()?.GetObject();
+            }
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    object? If(Atom self)
+    {
+        self.EnsureExactItemCount(3, 4);
+        bool condition = self.GetAtom(1).GetBoolean();
+        if (self.ItemCount == 3)
+        {
+            if (condition)
+            {
+                return self.GetAtom(2).Nullable()?.GetObject();
+            }
+            else
+            {
+                return null;
+            }
+        }
+        else if (self.ItemCount == 4)
+        {
+            if (condition)
+            {
+                return self.GetAtom(2).Nullable()?.GetObject();
+            }
+            else
+            {
+                return self.GetAtom(3).Nullable()?.GetObject();
+            }
+        }
+        else
+        {
+            return null;
+        }
     }
 }

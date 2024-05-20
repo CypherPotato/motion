@@ -31,8 +31,13 @@ public enum ExecutionContextScope
 /// </summary>
 public class ExecutionContext
 {
-    int scope = Random.Shared.Next();
     private AtomBase[] baseTokens;
+    internal CompilerFeature features = default;
+    int level = 0;
+    internal StringWriter traceWriter = new StringWriter();
+    ExecutionContext global;
+
+    internal MotionCollection<object?> CallingParameters { get; private set; }
 
     /// <summary>
     /// Gets the stored variables defined within this execution context.
@@ -77,50 +82,45 @@ public class ExecutionContext
     /// <summary>
     /// Gets the global execution context.
     /// </summary>
-    public ExecutionContext Global
-    {
-        get
-        {
-            ExecutionContext find = this;
-
-            while (find.Parent != null)
-            {
-                find = find.Parent;
-            }
-
-            return find;
-        }
-    }
+    public ExecutionContext Global => global;
 
     /// <summary>
     /// Gets the scope of this execution context.
     /// </summary>
     public ExecutionContextScope Scope { get; set; }
 
-    internal static ExecutionContext CreateBaseContext(AtomBase[] tokens)
+    internal static ExecutionContext CreateBaseContext(AtomBase[] tokens, CompilerFeature features)
     {
-        var ctx = new ExecutionContext(tokens, null);
+        var ctx = new ExecutionContext(tokens, ExecutionContextScope.Global, null, null, features, 0, new StringWriter());
         ctx.Scope = ExecutionContextScope.Global;
 
         return ctx;
     }
 
-    private ExecutionContext(AtomBase[] tokens, ExecutionContext? parent)
+    private ExecutionContext(AtomBase[] tokens, ExecutionContextScope scope, ExecutionContext? parent, ExecutionContext? global, CompilerFeature features, int level, StringWriter _traceLogger)
     {
         Parent = parent;
         baseTokens = tokens;
+        Scope = scope;
+
+        this.features = features;
+        this.level = level;
+        this.traceWriter = _traceLogger;
+        this.global = global ?? this;
+
         Variables = new MotionCollection<object?>(this, true, true);
         Constants = new MotionCollection<object?>(this, true, false);
         Methods = new MethodCollection(this, true, false);
         UserFunctions = new MotionCollection<MotionUserFunction>(this, true, false);
         Aliases = new MotionCollection<string>(this, true, false);
+        CallingParameters = new MotionCollection<object?>(this, true, false);
     }
 
     internal void ImportLibrary(IMotionLibrary library)
     {
         Methods.StartNamespace(library.Namespace);
         Constants.StartNamespace(library.Namespace);
-         
+
         library.ApplyMembers(this);
 
         Methods.EndNamespace();
@@ -181,7 +181,8 @@ public class ExecutionContext
         }
 
         if (container.Variables.TryGetValue(name, out result)
-         || container.Constants.TryGetValue(name, out result))
+         || container.Constants.TryGetValue(name, out result)
+         || container.CallingParameters.TryGetValue(name, out result))
         {
             return true;
         }
@@ -294,7 +295,7 @@ public class ExecutionContext
 
     ExecutionContext Fork(ExecutionContextScope scope)
     {
-        return new ExecutionContext(baseTokens, this) { Scope = scope };
+        return new ExecutionContext(baseTokens, scope, this, global, features, level + 1, traceWriter);
     }
 
     /// <summary>
@@ -361,8 +362,20 @@ public class ExecutionContext
         });
     }
 
+    void Trace(string message)
+    {
+        if (Global.Variables.TryGetValue("$trace", out object? b) && b is bool B && B == true)
+        {
+            traceWriter.WriteLine(new string(' ', level) + message);
+        }
+    }
+
     internal object? EvaluateTokenItem(AtomBase t, AtomBase parent)
     {
+        bool isTracingResult = false;
+        object? result = null;
+        Exception? exception = null;
+
         if (CancellationToken?.IsCancellationRequested == true)
         {
             throw new MotionExitException(null);
@@ -433,16 +446,7 @@ public class ExecutionContext
                             var firstChildren = t.Children[0];
                             if (firstChildren.Type != TokenType.Symbol && firstChildren.Type != TokenType.Operator)
                             {
-                                int len = t.Children.Length;
-                                for (int i = 0; i < len; i++)
-                                {
-                                    AtomBase T = t.Children[i];
-                                    if (i == len - 1)
-                                    {
-                                        return EvaluateTokenItem(T, t);
-                                    }
-                                    else EvaluateTokenItem(T, t);
-                                }
+                                throw new MotionException($"method or operator expected.", firstChildren.Location, null);
                             }
 
                             string name = firstChildren.Content!.ToString()!;
@@ -458,17 +462,57 @@ public class ExecutionContext
 
                             if (TryResolveMethod(name, out var methodValue))
                             {
-                                return methodValue!.Invoke(new Atom(t, parent, this));
+                                if (features.HasFlag(CompilerFeature.TraceRuntimeFunctionsCalls))
+                                {
+                                    isTracingResult = true;
+                                    Trace($"{level}: {t}");
+                                }
+
+                                result = methodValue!.Invoke(new Atom(t, parent, this));
+                                return result;
                             }
                             else
                             {
                                 if (TryResolveUserFunction(name, out var userFuncValue))
                                 {
-                                    return userFuncValue!.Invoke(t, Fork(ExecutionContextScope.Function));
+                                    if (features.HasFlag(CompilerFeature.TraceUserFunctionsCalls))
+                                    {
+                                        isTracingResult = true;
+                                        if (features.HasFlag(CompilerFeature.TraceUserFunctionsVariables))
+                                        {
+                                            StringBuilder s = new StringBuilder();
+
+                                            foreach (KeyValuePair<string, object?> v in CallingParameters._m)
+                                                s.Append($"{v.Key} = {v.Value}");
+
+                                            Trace($"{level}: {t} {{ {s} }}");
+                                        }
+                                        else
+                                        {
+                                            Trace($"{level}: {t}");
+                                        }
+                                    }
+                                    result = userFuncValue!.Invoke(t, Fork(ExecutionContextScope.Function));
+                                    return result;
                                 }
                                 else
                                 {
-                                    throw new MotionException("method not defined: " + name, firstChildren.Location, null);
+                                    string nameL = name.ToLower();
+                                    string[] similar =
+                                        Methods.Keys.Concat(UserFunctions.Keys)
+                                        .Select(f => f.ToLower())
+                                        .Where(f => f.Contains(nameL) || StdString.ComputeLevenshteinDistance(f, nameL) <= 3)
+                                        .Take(5)
+                                        .ToArray();
+
+                                    string errMessage = "method not defined: " + name;
+
+                                    if (similar.Length > 0)
+                                    {
+                                        errMessage += "\n\ndid you mean one of these methods?\n- " + string.Join("\n- ", similar);
+                                    }
+
+                                    throw new MotionException(errMessage, firstChildren.Location, null);
                                 }
                             }
                         }
@@ -478,17 +522,45 @@ public class ExecutionContext
                     return null;
             }
         }
-        catch (MotionExitException)
+        catch (MotionExitException mexi)
         {
+            exception = mexi;
             throw;
         }
-        catch (MotionException)
+        catch (MotionException me)
         {
+            exception = me;
             throw;
+        }
+        catch (TargetInvocationException tex)
+        {
+            if (tex.InnerException is MotionException mex)
+            {
+                exception = mex;
+                throw mex;
+            }
+
+            exception = tex;
+            throw new MotionException($"exception caught in Atom {t}: {tex.InnerException?.Message}", t.Location, tex);
         }
         catch (Exception ex)
         {
-            throw new MotionException($"Exception caught in Atom {t}: {ex.Message}", t.Location, ex);
+            exception = ex;
+            throw new MotionException($"exception caught in Atom {t}: {ex.Message}", t.Location, ex);
+        }
+        finally
+        {
+            if (isTracingResult)
+            {
+                if (exception is not null)
+                {
+                    Trace($"{level}: {t} raised {exception.GetType().Name}: {exception.Message}");
+                }
+                else
+                {
+                    Trace($"{level}: {t} returned {result} <{result?.GetType().Name ?? "NIL"}>");
+                }
+            }
         }
     }
 }

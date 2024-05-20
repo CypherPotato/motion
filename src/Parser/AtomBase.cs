@@ -30,7 +30,7 @@ struct AtomBase
     {
         if (Children.Length > 0)
         {
-            return $"({Children[0].Content} +{Children.Length})";
+            return $"({Children[0].Content} {string.Join(' ', Children[1..])})";
         }
         else if (Type == TokenType.Null)
         {

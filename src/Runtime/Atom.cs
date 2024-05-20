@@ -118,6 +118,35 @@ public struct Atom
     }
 
     /// <summary>
+    /// Ensures that this atom has exactly the specified number of child atoms. Throws an <see cref="InvalidOperationException"/> if the condition is not met.
+    /// </summary>
+    /// <param name="allowedCounts">The exact required number of child atoms.</param>
+    public void EnsureExactItemCount(params int[] allowedCounts)
+    {
+        if (!allowedCounts.Contains(ItemCount))
+        {
+            string n;
+            if (allowedCounts.Length == 1)
+            {
+                n = $"{allowedCounts[0]}";
+            }
+            else if (allowedCounts.Length == 2)
+            {
+                n = $"{allowedCounts[0]} or {allowedCounts[1]}";
+            }
+            else if (allowedCounts.Length >= 3)
+            {
+                n = $"{string.Join(", ", allowedCounts[1..(allowedCounts.Length - 1)])} or {allowedCounts[..1]}";
+            }
+            else
+            {
+                n = "no";
+            }
+            throw new MotionException($"This atom ({_ref}) expects {n} atoms. Got {ItemCount} instead.", _ref.Location, null);
+        }
+    }
+
+    /// <summary>
     /// Ensures that this <see cref="Atom"/> doens't has any child atoms.
     /// </summary>
     public void EnsureParameterless()

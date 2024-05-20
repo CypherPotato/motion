@@ -11,11 +11,13 @@ class Tokenizer
     private string? lastKeyword = null;
     private TextInterpreter Interpreter { get; set; }
     private MotionCompilerOptions CompilerOptions { get; set; }
+    private string? Filename { get; set; }
+    private int ExpressionIndex = 0;
 
-    public Tokenizer(string code, MotionCompilerOptions options)
+    public Tokenizer(string code, string? fileName, MotionCompilerOptions options)
     {
         string sanitized = Sanitizer.SanitizeCode(code, out _);
-        Interpreter = new TextInterpreter(sanitized);
+        Interpreter = new TextInterpreter(sanitized, fileName);
         CompilerOptions = options;
     }
 
@@ -54,7 +56,7 @@ class Tokenizer
         }
         else if (c != AtomBase.Ch_ExpressionStart)
         {
-            if (!CompilerOptions.AllowInlineDeclarations)
+            if (!CompilerOptions.Features.HasFlag(CompilerFeature.AllowParenthesislessCode))
             {
                 throw new MotionException("expected an atom initialization char '('. got " + c, Interpreter);
             }
@@ -62,6 +64,10 @@ class Tokenizer
             {
                 Interpreter.Move(-1);
             }
+        }
+        else
+        {
+            ExpressionIndex++;
         }
 
         Interpreter.SkipIgnoreTokens();
@@ -74,6 +80,7 @@ class Tokenizer
         {
             if (isInlineExpression && hit == '\n')
             {
+                ExpressionIndex--;
                 expStartSnapshot.Length = Interpreter.Position - expStartSnapshot.Position;
                 expression.Location = expStartSnapshot;
                 if (content.Length > 0)
@@ -94,6 +101,7 @@ class Tokenizer
         }
         else if (hit == AtomBase.Ch_ExpressionStart)
         {
+            ExpressionIndex++;
             if (content.Length > 0)
             {
                 AtomBase item = TokenizePart(ref nextContentSnapshot, content);
@@ -107,6 +115,11 @@ class Tokenizer
         }
         else if (hit == AtomBase.Ch_ExpressionEnd)
         {
+            ExpressionIndex--;
+            if (ExpressionIndex < 0)
+            {
+                throw new MotionException("extra ')' detected.", Interpreter);
+            }
             expStartSnapshot.Length = Interpreter.Position - expStartSnapshot.Position;
             expression.Location = expStartSnapshot;
             if (content.Length > 0)
@@ -119,7 +132,7 @@ class Tokenizer
         }
         else if (hit == '\0')
         {
-            if (depth == 0 && CompilerOptions.AllowInlineDeclarations)
+            if (depth == 0 && CompilerOptions.Features.HasFlag(CompilerFeature.AllowParenthesislessCode))
             {
                 expStartSnapshot.Length = Interpreter.Position - expStartSnapshot.Position;
                 expression.Location = expStartSnapshot;

@@ -29,10 +29,16 @@ public static class LibraryHelper
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     internal static object? LibraryConverter(Delegate method, Atom atom)
     {
+        var firstChild = atom.GetAtom(0);
         var methodInfo = method.GetMethodInfo();
         int paramOffset = 0;
         List<object?> parameterObjects = new List<object?>();
         ParameterInfo[] arguments = methodInfo.GetParameters();
+
+        if (arguments.Length == 1 && arguments[0].ParameterType == typeof(Atom))
+        {
+            return method.DynamicInvoke(new object?[] { atom });
+        }
 
         object?[]? paramsArrayInstance = null;
         int paramsIndex = -1;
@@ -67,11 +73,11 @@ public static class LibraryHelper
 
         if (inAtoms.Length < requiredParams)
         {
-            throw new ArgumentException($"This method requires at least {requiredParams} parameters. Got {inAtoms.Length} instead.");
+            throw new MotionException($"this method requires at least {requiredParams} parameters, but got {inAtoms.Length} instead.", firstChild);
         }
-        else if (paramsIndex == -1 && inAtoms.Length > arguments.Length)
+        else if (paramsIndex == -1 && inAtoms.Length > requiredParams)
         {
-            throw new ArgumentException($"Too many arguments. This method only expects {arguments.Length} with required and optional parameters, but got {inAtoms.Length} instead.");
+            throw new MotionException($"too many arguments for the method \"{firstChild.GetSymbol()}\".\nthis method only expects {requiredParams} parameters, but got {inAtoms.Length} instead.", firstChild);
         }
 
         for (int i = 0; i < inAtoms.Length; i++)

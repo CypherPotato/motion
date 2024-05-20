@@ -12,15 +12,17 @@ struct TextInterpreterSnapshot
     public readonly int Column;
     public readonly int Position;
     public readonly string LineText;
+    public readonly string? Filename;
     public int Length;
 
-    public TextInterpreterSnapshot(int line, int column, int position, int length, string lineText)
+    public TextInterpreterSnapshot(int line, int column, int position, int length, string lineText, string? filename)
     {
         Line = line;
         Column = column;
         Length = length;
         Position = position;
         LineText = lineText;
+        Filename = filename;
     }
 }
 
@@ -30,6 +32,7 @@ class TextInterpreter
     public int Position { get; private set; } = 0;
     public int Length { get; private set; }
     public int Line { get; private set; } = 1;
+    public string? Filename { get; set; }
 
     public int Column
     {
@@ -57,15 +60,16 @@ class TextInterpreter
         }
     }
 
-    public TextInterpreter(string s)
+    public TextInterpreter(string source, string? filename)
     {
-        InputString = s;
+        InputString = source;
         Length = InputString.Length;
+        Filename = filename;
     }
 
     public TextInterpreterSnapshot TakeSnapshot(int length)
     {
-        return new TextInterpreterSnapshot(Line, Column, Position, length, CurrentLine);
+        return new TextInterpreterSnapshot(Line, Column, Position, length, CurrentLine, Filename);
     }
 
     public bool CanRead()

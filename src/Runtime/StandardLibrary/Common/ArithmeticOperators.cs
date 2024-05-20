@@ -23,7 +23,7 @@ internal class ArithmeticOperators : IMotionLibrary
 
         dynamic carry = nums[0];
         for (int i = 1; i < nums.Length; i++)
-            carry *= nums[i];
+            carry += nums[i];
 
         return carry;
     }
@@ -34,7 +34,7 @@ internal class ArithmeticOperators : IMotionLibrary
 
         dynamic carry = nums[0];
         for (int i = 1; i < nums.Length; i++)
-            carry *= nums[i];
+            carry -= nums[i];
 
         return carry;
     }

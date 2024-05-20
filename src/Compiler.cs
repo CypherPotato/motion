@@ -38,6 +38,27 @@ public static class Compiler
         return result.CreateContext().Evaluate();
     }
 
+    public static CompilerResult Compile(IEnumerable<MotionSource> sources, MotionCompilerOptions? options = null)
+    {
+        MotionCompilerOptions _options = options ?? new MotionCompilerOptions();
+        try
+        {
+            List<AtomBase> buildingAtoms = new List<AtomBase>();
+
+            foreach (var source in sources)
+            {
+                AtomBase[] tokens = new Tokenizer(source.Source, source.Filename, _options).Tokenize().ToArray();
+                buildingAtoms.AddRange(tokens);
+            }
+
+            return new CompilerResult(buildingAtoms.ToArray(), true, null, _options);
+        }
+        catch (MotionException ex)
+        {
+            return new CompilerResult(Array.Empty<AtomBase>(), false, ex, _options);
+        }
+    }
+
     /// <summary>
     /// Compiles the specified Motion code into a representation that can be executed by the Motion interpreter.
     /// </summary>
@@ -49,7 +70,7 @@ public static class Compiler
         MotionCompilerOptions _options = options ?? new MotionCompilerOptions();
         try
         {
-            AtomBase[] tokens = new Tokenizer(code, _options).Tokenize().ToArray();
+            AtomBase[] tokens = new Tokenizer(code, null, _options).Tokenize().ToArray();
             return new CompilerResult(tokens, true, null, _options);
         }
         catch (MotionException ex)
@@ -68,6 +89,51 @@ public static class Compiler
         Sanitizer.SanitizeCode(code, out int parenthesisIndex);
         return parenthesisIndex;
     }
+}
+
+public sealed class MotionSource
+{
+    public string? Filename { get; set; }
+    public string Source { get; set; }
+
+    public MotionSource(string? filename, string source)
+    {
+        Filename = filename;
+        Source = source;
+    }
+}
+
+/// <summary>
+/// Represents special flags and features to the Motion compiler.
+/// </summary>
+[Flags]
+public enum CompilerFeature
+{
+    /// <summary>
+    /// Indicates that the compile should allow running code which the first
+    /// level aren't enclosed by an parenthesis block.
+    /// </summary>
+    AllowParenthesislessCode = 1 << 1,
+
+    /// <summary>
+    /// Indicates that the compile library should include console methods.
+    /// </summary>
+    EnableConsoleMethods = 1 << 2,
+
+    /// <summary>
+    /// Indicates that the runtime can trace user defined functions calls.
+    /// </summary>
+    TraceUserFunctionsCalls = 1 << 3,
+
+    /// <summary>
+    /// Indicates that the runtime can trace user runtime functions calls.
+    /// </summary>
+    TraceRuntimeFunctionsCalls = 1 << 4,
+
+    /// <summary>
+    /// Indicates that the runtime can trace variables values.
+    /// </summary>
+    TraceUserFunctionsVariables = 1 << 5
 }
 
 /// <summary>
@@ -108,16 +174,15 @@ public sealed class CompilerResult
     public Runtime.ExecutionContext CreateContext()
     {
         if (!Success) throw Error!;
-        var context = Runtime.ExecutionContext.CreateBaseContext(_tokens);
+        var context = Runtime.ExecutionContext.CreateBaseContext(_tokens, Options.Features);
 
         context.ImportLibrary(new Runtime.StandardLibrary.StdCommon());
         context.ImportLibrary(new Runtime.StandardLibrary.StdString());
-        context.ImportLibrary(new Runtime.StandardLibrary.StdConsole());
+        context.ImportLibrary(new Runtime.StandardLibrary.StdMath());
+        context.ImportLibrary(new Runtime.StandardLibrary.StdRandom());
 
-        if (Options.AllowDotNetInvoke)
-        {
-            //context.ImportLibrary(new Runtime.StandardLibrary.StdNet());
-        }
+        if (Options.Features.HasFlag(CompilerFeature.EnableConsoleMethods))
+            context.ImportLibrary(new Runtime.StandardLibrary.StdConsole());
 
         foreach (IMotionLibrary lib in Options.Libraries)
         {

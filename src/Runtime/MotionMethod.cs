@@ -39,16 +39,24 @@ public sealed class MotionUserFunction
 
     internal object? Invoke(AtomBase callingExpression, ExecutionContext context)
     {
-        if (Math.Max(callingExpression.Children.Length - 1, 0) != Arguments.Length)
+        var firstChild = callingExpression.Type == TokenType.Expression ?
+            callingExpression.Children[0] : callingExpression;
+
+        int atomCount = Math.Max(callingExpression.Children.Length - 1, 0);
+        if (atomCount < Arguments.Length)
         {
-            throw new MotionException($"Expected {Arguments.Length} parameters. Got {callingExpression.Children.Length - 1}.", callingExpression.Location, null);
+            throw new MotionException($"this method requires at least {Arguments.Length} parameters, but got {atomCount} instead.", firstChild.Location, null);
+        }
+        else if (atomCount > Arguments.Length)
+        {
+            throw new MotionException($"too many arguments for the method \"{firstChild.Content}\".\nthis method only expects {Arguments.Length} parameters, but got {atomCount} instead.", firstChild.Location, null);
         }
 
         for (int i = 0; i < Arguments.Length; i++)
         {
             string key = Arguments[i];
             object? value = context.EvaluateTokenItem(callingExpression.Children[i + 1], callingExpression);
-            context.Variables.Set(key, value);
+            context.CallingParameters.InternalSet(key, value);
         }
 
         return context.EvaluateTokenItem(body, AtomBase.Undefined);

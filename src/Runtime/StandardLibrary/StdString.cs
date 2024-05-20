@@ -35,6 +35,10 @@ internal class StdString : IMotionLibrary
         context.Methods.Add("coalesce", Coalesce);
         context.Methods.Add("repeat", Repeat);
         context.Methods.Add("substr", Substr);
+        context.Methods.Add("print-number", PrintNumber);
+        context.Methods.Add("to-string", NToString);
+        context.Methods.Add("fmt", Fmt);
+        context.Methods.Add("levenshtein", ComputeLevenshteinDistance);
     }
 
     string Concat(params object?[] items) => string.Join("", items);
@@ -44,6 +48,9 @@ internal class StdString : IMotionLibrary
     string? Trim(string? s) => s?.Trim();
     string? TrimEnd(string? s) => s?.TrimEnd();
     string? TrimStart(string? s) => s?.TrimStart();
+    string? NToString(object? s) => s?.ToString();
+    string PrintNumber(double n) => n.ToString("N2");
+    string Fmt(string format, params object?[] items) => String.Format(format, items);
     string[] Explode(string sep, string s) => s.Split(sep);
     string Implode(string sep, params object?[] values) => string.Join(sep, values);
     string PadLeft(string s, char pad, int count) => s.PadLeft(count, pad);
@@ -106,5 +113,59 @@ internal class StdString : IMotionLibrary
         }
 
         throw new InvalidOperationException($"this method expects only 2 or 3 parameters.");
+    }
+
+    internal static int ComputeLevenshteinDistance(string s, string t)
+    {
+        int n = s.Length; // length of s
+        int m = t.Length; // length of t
+
+        if (n == 0)
+        {
+            return m;
+        }
+        else if (m == 0)
+        {
+            return n;
+        }
+
+        int[] p = new int[n + 1]; //'previous' cost array, horizontally
+        int[] d = new int[n + 1]; // cost array, horizontally
+        int[] _d; //placeholder to assist in swapping p and d
+
+        // indexes into strings s and t
+        int i; // iterates through s
+        int j; // iterates through t
+
+        char t_j; // jth character of t
+
+        int cost; // cost
+
+        for (i = 0; i <= n; i++)
+        {
+            p[i] = i;
+        }
+
+        for (j = 1; j <= m; j++)
+        {
+            t_j = t[j - 1];
+            d[0] = j;
+
+            for (i = 1; i <= n; i++)
+            {
+                cost = s[i - 1] == t_j ? 0 : 1;
+                // minimum of cell to the left+1, to the top+1, diagonally left and up +cost				
+                d[i] = Math.Min(Math.Min(d[i - 1] + 1, p[i] + 1), p[i - 1] + cost);
+            }
+
+            // copy current distance counts to 'previous row' distance counts
+            _d = p;
+            p = d;
+            d = _d;
+        }
+
+        // our last action in the above loop was to switch d and p, so p now 
+        // actually has the most recent cost counts
+        return p[n];
     }
 }

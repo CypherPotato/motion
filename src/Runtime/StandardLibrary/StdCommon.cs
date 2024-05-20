@@ -16,7 +16,8 @@ class StdCommon : IMotionLibrary
 
     public void ApplyMembers(ExecutionContext context)
     {
-        context.Constants.Add("motion-version", Compiler.MotionVersion);
+        context.Constants.Set("motion-version", Compiler.MotionVersion);
+        context.Variables.Set("$trace", false);
         new ArithmeticOperators().ApplyMembers(context);
         new BooleanOperators().ApplyMembers(context);
         new ComDeclarators().ApplyMembers(context);
