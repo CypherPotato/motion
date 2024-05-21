@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using static MotionCLI.Program;
+using Motion.Compilation;
 
 namespace MotionCLI;
 
@@ -28,7 +29,7 @@ internal static class Interactive
                 selectedCompletionItemBackground: AnsiColor.Rgb(30, 30, 30),
                 selectedTextBackground: AnsiColor.Rgb(20, 61, 102)));
 
-        MotionCompilerOptions options = new MotionCompilerOptions()
+        CompilerOptions options = new CompilerOptions()
         {
             Features =
                     CompilerFeature.AllowParenthesislessCode
@@ -40,7 +41,7 @@ internal static class Interactive
         Motion.Runtime.ExecutionContext context;
         if (ImportedFiles.Length > 0)
         {
-            List<MotionSource> sources = new List<MotionSource>();
+            List<CompilerSource> sources = new List<CompilerSource>();
 
             foreach (string file in Program.ImportedFiles)
             {
@@ -50,7 +51,7 @@ internal static class Interactive
                     Console.WriteLine($"error: the specified importing file {file} couldn't be found.");
                     break;
                 }
-                sources.Add(new MotionSource(fpath, File.ReadAllText(fpath)));
+                sources.Add(new CompilerSource(fpath, File.ReadAllText(fpath)));
             }
 
             var compilerResult = Compiler.Compile(sources, options);

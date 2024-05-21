@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Motion.Compilation;
 using Motion.Parser;
 using Motion.Runtime.StandardLibrary;
 
@@ -31,7 +32,7 @@ public enum ExecutionContextScope
 /// </summary>
 public class ExecutionContext
 {
-    internal CompilerResult compilerResult;
+    internal CompilationResult compilerResult;
     int level = 0;
     internal StringWriter traceWriter = new StringWriter();
     ExecutionContext global;
@@ -88,7 +89,7 @@ public class ExecutionContext
     /// </summary>
     public ExecutionContextScope Scope { get; set; }
 
-    internal static ExecutionContext CreateBaseContext(AtomBase[] tokens, CompilerResult result)
+    internal static ExecutionContext CreateBaseContext(CompilationResult result)
     {
         var ctx = new ExecutionContext(result, ExecutionContextScope.Global, null, null, 0, new StringWriter());
         ctx.Scope = ExecutionContextScope.Global;
@@ -96,7 +97,7 @@ public class ExecutionContext
         return ctx;
     }
 
-    private ExecutionContext(CompilerResult result, ExecutionContextScope scope, ExecutionContext? parent, ExecutionContext? global, int level, StringWriter _traceLogger)
+    private ExecutionContext(CompilationResult result, ExecutionContextScope scope, ExecutionContext? parent, ExecutionContext? global, int level, StringWriter _traceLogger)
     {
         Parent = parent;
         Scope = scope;
@@ -554,12 +555,12 @@ public class ExecutionContext
             }
 
             exception = tex;
-            throw new MotionException($"exception caught in Atom {t}: {tex.InnerException?.Message}", t.Location, tex);
+            throw new MotionException($"exception caught in Atom {t}:\n{tex.InnerException?.Message}", t.Location, tex);
         }
         catch (Exception ex)
         {
             exception = ex;
-            throw new MotionException($"exception caught in Atom {t}: {ex.Message}", t.Location, ex);
+            throw new MotionException($"exception caught in Atom {t}:\n{ex.Message}", t.Location, ex);
         }
         finally
         {

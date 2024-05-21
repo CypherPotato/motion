@@ -5,12 +5,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Motion;
+namespace Motion.Compilation;
 
 /// <summary>
 /// Represents an set of compiler options for the Motion compiler.
 /// </summary>
-public class MotionCompilerOptions
+public class CompilerOptions
 {
     /// <summary>
     /// Gets or sets special compiler flags and features to the Motion compiler.

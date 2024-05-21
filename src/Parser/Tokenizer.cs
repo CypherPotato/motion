@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Motion.Compilation;
 
 namespace Motion.Parser;
 
@@ -10,13 +11,13 @@ class Tokenizer
 {
     private string? lastKeyword = null;
     private TextInterpreter Interpreter { get; set; }
-    private MotionCompilerOptions CompilerOptions { get; set; }
+    private CompilerOptions CompilerOptions { get; set; }
     private string? Filename { get; set; }
     private int ExpressionIndex = 0;
 
-    public Tokenizer(string code, string? fileName, MotionCompilerOptions options)
+    public Tokenizer(string code, string? fileName, CompilerOptions options)
     {
-        string sanitized = Sanitizer.SanitizeCode(code, out _);
+        string sanitized = Sanitizer.SanitizeCode(code, out _, out _);
         Interpreter = new TextInterpreter(sanitized, fileName);
         CompilerOptions = options;
     }

@@ -5,8 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Motion.Parser;
 using Motion.Runtime;
-using Motion;
 using System.Reflection;
+using Motion.Compilation;
 
 namespace Motion;
 
@@ -20,37 +20,16 @@ public static class Compiler
     /// </summary>
     public const string MotionVersion = "v0.1-alpha-2";
 
-    public static MotionTreeItem BuildSyntaxTree(string code)
+    /// <summary>
+    /// Parses and constructs a sequence of objects representing atoms and their types from the input text. This method does not throw any errors.
+    /// </summary>
+    /// <param name="code">The Motion code to analyse.</param>
+    public static SyntaxItem[] AnalyzeSyntax(string code)
     {
-        var linter = new Linter(code);
-        var result = linter.Lint();
+        var linter = new Analyzer(code);
+        linter.Lint();
 
-        MotionTreeItem _BuildPairFor(AtomBase t)
-        {
-            string key = t.ToString();
-
-            if (t.Children.Length > 0)
-            {
-                List<MotionTreeItem> children = new List<MotionTreeItem>();
-                foreach (AtomBase s in t.Children)
-                {
-                    children.Add(_BuildPairFor(s));
-                }
-                return new MotionTreeItem(key, children.ToArray(), t);
-            }
-            else
-            {
-                return new MotionTreeItem(key, Array.Empty<MotionTreeItem>(), t);
-            }
-        }
-
-        List<MotionTreeItem> rootNodes = new List<MotionTreeItem>();
-        foreach (AtomBase s in result)
-        {
-            rootNodes.Add(_BuildPairFor(s));
-        }
-
-        return new MotionTreeItem("root", rootNodes.ToArray(), AtomBase.Undefined);
+        return linter.GetSyntaxItems();
     }
 
     /// <summary>
@@ -58,9 +37,9 @@ public static class Compiler
     /// specified code has syntax errors or if caught an exception while running the code.
     /// </summary>
     /// <param name="code">The Motion code to run.</param>
-    /// <param name="options">Optional. Defines the <see cref="MotionCompilerOptions"/> options to the compiler.</param>
+    /// <param name="options">Optional. Defines the <see cref="CompilerOptions"/> options to the compiler.</param>
     /// <returns>An array of results of the returned atom values.</returns>
-    public static object?[] Evaluate(string code, MotionCompilerOptions? options = null)
+    public static object?[] Evaluate(string code, CompilerOptions? options = null)
     {
         var result = Compile(code, options);
         if (!result.Success)
@@ -72,14 +51,14 @@ public static class Compiler
     }
 
     /// <summary>
-    /// Compiles the specified list of <see cref="MotionSource"/> into a representation that can be executed by the Motion interpreter.
+    /// Compiles the specified list of <see cref="CompilerSource"/> into a representation that can be executed by the Motion interpreter.
     /// </summary>
-    /// <param name="sources">An list of <see cref="MotionSource"/> to compile.</param>
-    /// <param name="options">Optional. Defines the <see cref="MotionCompilerOptions"/> options to the compiler.</param>
-    /// <returns>A <see cref="CompilerResult"/> object containing the results of the compilation, including any errors or warnings.</returns>
-    public static CompilerResult Compile(IEnumerable<MotionSource> sources, MotionCompilerOptions? options = null)
+    /// <param name="sources">An list of <see cref="CompilerSource"/> to compile.</param>
+    /// <param name="options">Optional. Defines the <see cref="CompilerOptions"/> options to the compiler.</param>
+    /// <returns>A <see cref="CompilationResult"/> object containing the results of the compilation, including any errors or warnings.</returns>
+    public static CompilationResult Compile(IEnumerable<CompilerSource> sources, CompilerOptions? options = null)
     {
-        MotionCompilerOptions _options = options ?? new MotionCompilerOptions();
+        CompilerOptions _options = options ?? new CompilerOptions();
         try
         {
             List<AtomBase> buildingAtoms = new List<AtomBase>();
@@ -90,11 +69,11 @@ public static class Compiler
                 buildingAtoms.AddRange(tokens);
             }
 
-            return new CompilerResult(buildingAtoms.ToArray(), true, null, _options);
+            return new CompilationResult(buildingAtoms.ToArray(), true, null, _options);
         }
         catch (MotionException ex)
         {
-            return new CompilerResult(Array.Empty<AtomBase>(), false, ex, _options);
+            return new CompilationResult(Array.Empty<AtomBase>(), false, ex, _options);
         }
     }
 
@@ -102,25 +81,30 @@ public static class Compiler
     /// Compiles the specified Motion code into a representation that can be executed by the Motion interpreter.
     /// </summary>
     /// <param name="code">The Motion code to compile.</param>
-    /// <param name="options">Optional. Defines the <see cref="MotionCompilerOptions"/> options to the compiler.</param>
-    /// <returns>A <see cref="CompilerResult"/> object containing the results of the compilation, including any errors or warnings.</returns>
-    public static CompilerResult Compile(string code, MotionCompilerOptions? options = null)
+    /// <param name="options">Optional. Defines the <see cref="CompilerOptions"/> options to the compiler.</param>
+    /// <returns>A <see cref="CompilationResult"/> object containing the results of the compilation, including any errors or warnings.</returns>
+    public static CompilationResult Compile(string code, CompilerOptions? options = null)
     {
-        MotionCompilerOptions _options = options ?? new MotionCompilerOptions();
+        CompilerOptions _options = options ?? new CompilerOptions();
         try
         {
             AtomBase[] tokens = new Tokenizer(code, null, _options).Tokenize().ToArray();
-            return new CompilerResult(tokens, true, null, _options);
+            return new CompilationResult(tokens, true, null, _options);
         }
         catch (MotionException ex)
         {
-            return new CompilerResult(Array.Empty<AtomBase>(), false, ex, _options);
+            return new CompilationResult(Array.Empty<AtomBase>(), false, ex, _options);
         }
     }
 
-    public static Runtime.ExecutionContext CreateEmptyContext(MotionCompilerOptions? options = null)
+    /// <summary>
+    /// Creates an default, empty <see cref="ExecutionContext"/> with no code.
+    /// </summary>
+    /// <param name="options">Optional. Defines the <see cref="CompilerOptions"/> options to the compiler.</param>
+    /// <returns></returns>
+    public static Runtime.ExecutionContext CreateEmptyContext(CompilerOptions? options = null)
     {
-        var result = new CompilerResult(Array.Empty<AtomBase>(), true, null, options ?? new MotionCompilerOptions());
+        var result = new CompilationResult(Array.Empty<AtomBase>(), true, null, options ?? new CompilerOptions());
         return result.CreateContext();
     }
 
@@ -131,252 +115,7 @@ public static class Compiler
     /// <returns>Returns true if the code is properly enclosed.</returns>
     public static int GetParenthesisIndex(string code)
     {
-        Sanitizer.SanitizeCode(code, out int parenthesisIndex);
+        Sanitizer.SanitizeCode(code, out int parenthesisIndex, out _);
         return parenthesisIndex;
-    }
-}
-
-/// <summary>
-/// Represents an Motion source code.
-/// </summary>
-public sealed class MotionSource
-{
-    /// <summary>
-    /// Gets or sets the file name of this Motion source code.
-    /// </summary>
-    public string? Filename { get; set; }
-
-    /// <summary>
-    /// Gets or sets the Motion source code contents.
-    /// </summary>
-    public string Source { get; set; }
-
-    /// <summary>
-    /// Creates an new <see cref="MotionSource"/> instance with specified parameters.
-    /// </summary>
-    /// <param name="filename">The file name of this Motion source code.</param>
-    /// <param name="source">The Motion source code contents.</param>
-    public MotionSource(string? filename, string source)
-    {
-        Filename = filename;
-        Source = source;
-    }
-}
-
-/// <summary>
-/// Represents special flags and features to the Motion compiler.
-/// </summary>
-[Flags]
-public enum CompilerFeature
-{
-    /// <summary>
-    /// Indicates that the compile should allow running code which the first
-    /// level aren't enclosed by an parenthesis block.
-    /// </summary>
-    AllowParenthesislessCode = 1 << 1,
-
-    /// <summary>
-    /// Indicates that the compile library should include console methods.
-    /// </summary>
-    EnableConsoleMethods = 1 << 2,
-
-    /// <summary>
-    /// Indicates that the runtime can trace user defined functions calls.
-    /// </summary>
-    TraceUserFunctionsCalls = 1 << 3,
-
-    /// <summary>
-    /// Indicates that the runtime can trace user runtime functions calls.
-    /// </summary>
-    TraceRuntimeFunctionsCalls = 1 << 4,
-
-    /// <summary>
-    /// Indicates that the runtime can trace variables values.
-    /// </summary>
-    TraceUserFunctionsVariables = 1 << 5
-}
-
-/// <summary>
-/// Represents the results of a Motion code compilation.
-/// </summary>
-public sealed class CompilerResult
-{
-    internal AtomBase[] tokens;
-
-    /// <summary>
-    /// Gets the specified <see cref="MotionCompilerOptions"/> used to compile this result.
-    /// </summary>
-    public MotionCompilerOptions Options { get; private set; }
-
-    /// <summary>
-    /// Gets a value indicating whether the compilation was successful.
-    /// </summary>
-    public bool Success { get; private set; }
-
-    /// <summary>
-    /// Gets any error that occurred during compilation, or null if the compilation was successful.
-    /// </summary>
-    public MotionException? Error { get; private set; }
-
-    internal CompilerResult(AtomBase[] tokens, bool success, MotionException? error, MotionCompilerOptions options)
-    {
-        this.tokens = tokens;
-        Success = success;
-        Error = error;
-        Options = options;
-    }
-
-    /// <summary>
-    /// Creates an execution context for the compiled Motion code.
-    /// </summary>
-    /// <returns>An execution context that can be used to execute the compiled code.</returns>
-    /// <exception cref="MotionException">Thrown if the compilation was not successful.</exception>
-    public Runtime.ExecutionContext CreateContext()
-    {
-        if (!Success) throw Error!;
-        var context = Runtime.ExecutionContext.CreateBaseContext(tokens, this);
-
-        context.ImportLibrary(new Runtime.StandardLibrary.StdCommon());
-        context.ImportLibrary(new Runtime.StandardLibrary.StdString());
-        context.ImportLibrary(new Runtime.StandardLibrary.StdMath());
-        context.ImportLibrary(new Runtime.StandardLibrary.StdRandom());
-        context.ImportLibrary(new Runtime.StandardLibrary.StdCType());
-
-        if (Options.Features.HasFlag(CompilerFeature.EnableConsoleMethods))
-            context.ImportLibrary(new Runtime.StandardLibrary.StdConsole());
-
-        foreach (IMotionLibrary lib in Options.Libraries)
-        {
-            context.ImportLibrary(lib);
-        }
-
-        return context;
-    }
-
-    /// <summary>
-    /// Gets an array of <see cref="MotionSymbolInformation"/> of this compiled result.
-    /// </summary>
-    public MotionSymbolInformation[] GetSymbolsInformation()
-    {
-        var ctx = CreateContext();
-
-        List<MotionSymbolInformation> info = new List<MotionSymbolInformation>();
-        info.AddRange(ctx.Variables.Keys.Select(v => new MotionSymbolInformation(MotionSymbolInformationType.Variable, v)));
-        info.AddRange(ctx.Constants.Keys.Select(v => new MotionSymbolInformation(MotionSymbolInformationType.Constant, v)));
-        info.AddRange(ctx.Methods.Keys.Select(v => new MotionSymbolInformation(MotionSymbolInformationType.Method, v)));
-        info.AddRange(ctx.UserFunctions.Keys.Select(v => new MotionSymbolInformation(MotionSymbolInformationType.UserFunction, v)));
-
-        return info.ToArray();
-    }
-}
-
-/// <summary>
-/// Represents an class which contains informations about an specific symbol in an Motion code.
-/// </summary>
-public class MotionSymbolInformation
-{
-    /// <summary>
-    /// Gets the symbol type.
-    /// </summary>
-    public MotionSymbolInformationType Type { get; }
-
-    /// <summary>
-    /// Gets the symbol name.
-    /// </summary>
-    public string Name { get; set; }
-
-    /// <summary>
-    /// Creates an new instance of the <see cref="MotionSymbolInformation"/> class with given parameters.
-    /// </summary>
-    /// <param name="type">The symbol type.</param>
-    /// <param name="name">The symbol name.</param>
-    public MotionSymbolInformation(MotionSymbolInformationType type, string name)
-    {
-        Type = type;
-        Name = name;
-    }
-}
-
-/// <summary>
-/// Represents an symbol type.
-/// </summary>
-public enum MotionSymbolInformationType
-{
-    /// <summary>
-    /// Represents an symbol which is defined within an variable value.
-    /// </summary>
-    Variable,
-
-    /// <summary>
-    /// Represents an symbol which is defined within an constant value.
-    /// </summary>
-    Constant,
-
-    /// <summary>
-    /// Represents an symbol which points to an runtime method.
-    /// </summary>
-    Method,
-
-    /// <summary>
-    /// Represents an symbol which points to an Motion-defined function.
-    /// </summary>
-    UserFunction
-}
-
-/// <summary>
-/// Represents an syntax tree of an Motion code Atom.
-/// </summary>
-public class MotionTreeItem
-{
-    /// <summary>
-    /// Gets the raw, unformatted contents of the atom.
-    /// </summary>
-    public string RawContents { get; }
-
-    /// <summary>
-    /// Gets the visual representation of this atom.
-    /// </summary>
-    public string Contents { get; }
-
-    /// <summary>
-    /// Gets the children <see cref="MotionTreeItem"/> items of this atom.
-    /// </summary>
-    public MotionTreeItem[] Children { get; }
-
-    /// <summary>
-    /// Gets the <see cref="AtomType"/> which represents this Atom.
-    /// </summary>
-    public AtomType Type { get; }
-
-    /// <summary>
-    /// Gets the line position of this Atom.
-    /// </summary>
-    public int Line { get; }
-
-    /// <summary>
-    /// Gets the column position of this Atom.
-    /// </summary>
-    public int Column { get; }
-
-    /// <summary>
-    /// Gets the absolute index of this Atom.
-    /// </summary>
-    public int Position { get; }
-
-    /// <summary>
-    /// Gets the length of this Atom.
-    /// </summary>
-    public int Length { get; }
-
-    internal MotionTreeItem(string contents, IEnumerable<MotionTreeItem> children, AtomBase at)
-    {
-        RawContents = at.Content?.ToString() ?? "";
-        Contents = contents;
-        Children = children.ToArray();
-        Type = Atom.AtomTypeFromTokenType(at.Type);
-        Line = at.Location.Line;
-        Column = at.Location.Column;
-        Position = at.Location.Position;
-        Length = at.Location.Length;
     }
 }
