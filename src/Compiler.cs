@@ -20,6 +20,39 @@ public static class Compiler
     /// </summary>
     public const string MotionVersion = "v0.1-alpha-2";
 
+    public static MotionTreeItem BuildSyntaxTree(string code)
+    {
+        var linter = new Linter(code);
+        var result = linter.Lint();
+
+        MotionTreeItem _BuildPairFor(AtomBase t)
+        {
+            string key = t.ToString();
+
+            if (t.Children.Length > 0)
+            {
+                List<MotionTreeItem> children = new List<MotionTreeItem>();
+                foreach (AtomBase s in t.Children)
+                {
+                    children.Add(_BuildPairFor(s));
+                }
+                return new MotionTreeItem(key, children.ToArray(), t);
+            }
+            else
+            {
+                return new MotionTreeItem(key, Array.Empty<MotionTreeItem>(), t);
+            }
+        }
+
+        List<MotionTreeItem> rootNodes = new List<MotionTreeItem>();
+        foreach (AtomBase s in result)
+        {
+            rootNodes.Add(_BuildPairFor(s));
+        }
+
+        return new MotionTreeItem("root", rootNodes.ToArray(), AtomBase.Undefined);
+    }
+
     /// <summary>
     /// Compiles and runs the specified Motion code into their respective atomic values. This method throws an <see cref="MotionException"/> if the
     /// specified code has syntax errors or if caught an exception while running the code.
@@ -83,6 +116,12 @@ public static class Compiler
         {
             return new CompilerResult(Array.Empty<AtomBase>(), false, ex, _options);
         }
+    }
+
+    public static Runtime.ExecutionContext CreateEmptyContext(MotionCompilerOptions? options = null)
+    {
+        var result = new CompilerResult(Array.Empty<AtomBase>(), true, null, options ?? new MotionCompilerOptions());
+        return result.CreateContext();
     }
 
     /// <summary>
@@ -162,7 +201,7 @@ public enum CompilerFeature
 /// </summary>
 public sealed class CompilerResult
 {
-    private AtomBase[] _tokens;
+    internal AtomBase[] tokens;
 
     /// <summary>
     /// Gets the specified <see cref="MotionCompilerOptions"/> used to compile this result.
@@ -181,7 +220,7 @@ public sealed class CompilerResult
 
     internal CompilerResult(AtomBase[] tokens, bool success, MotionException? error, MotionCompilerOptions options)
     {
-        _tokens = tokens;
+        this.tokens = tokens;
         Success = success;
         Error = error;
         Options = options;
@@ -195,12 +234,13 @@ public sealed class CompilerResult
     public Runtime.ExecutionContext CreateContext()
     {
         if (!Success) throw Error!;
-        var context = Runtime.ExecutionContext.CreateBaseContext(_tokens, Options.Features);
+        var context = Runtime.ExecutionContext.CreateBaseContext(tokens, this);
 
         context.ImportLibrary(new Runtime.StandardLibrary.StdCommon());
         context.ImportLibrary(new Runtime.StandardLibrary.StdString());
         context.ImportLibrary(new Runtime.StandardLibrary.StdMath());
         context.ImportLibrary(new Runtime.StandardLibrary.StdRandom());
+        context.ImportLibrary(new Runtime.StandardLibrary.StdCType());
 
         if (Options.Features.HasFlag(CompilerFeature.EnableConsoleMethods))
             context.ImportLibrary(new Runtime.StandardLibrary.StdConsole());
@@ -227,40 +267,6 @@ public sealed class CompilerResult
         info.AddRange(ctx.UserFunctions.Keys.Select(v => new MotionSymbolInformation(MotionSymbolInformationType.UserFunction, v)));
 
         return info.ToArray();
-    }
-
-    /// <summary>
-    /// Emits an <see cref="MotionTreeItem"/> syntax tree of this compiled result.
-    /// </summary>
-    /// <returns></returns>
-    public MotionTreeItem BuildSyntaxTree()
-    {
-        MotionTreeItem _BuildPairFor(AtomBase t)
-        {
-            string key = t.ToString();
-
-            if (t.Children.Length > 0)
-            {
-                List<MotionTreeItem> children = new List<MotionTreeItem>();
-                foreach (AtomBase s in t.Children)
-                {
-                    children.Add(_BuildPairFor(s));
-                }
-                return new MotionTreeItem(key, children.ToArray(), t);
-            }
-            else
-            {
-                return new MotionTreeItem(key, Array.Empty<MotionTreeItem>(), t);
-            }
-        }
-
-        List<MotionTreeItem> rootNodes = new List<MotionTreeItem>();
-        foreach (AtomBase s in _tokens)
-        {
-            rootNodes.Add(_BuildPairFor(s));
-        }
-
-        return new MotionTreeItem("root", rootNodes.ToArray(), AtomBase.Undefined);
     }
 }
 

@@ -41,16 +41,8 @@ internal static class ServerMessenger
 
                     HttpResponseMessage resMsg = client.Send(reqMsg);
                     string? response = resMsg.Content.ReadAsStringAsync().Result;
-                    if (resMsg.IsSuccessStatusCode)
-                    {
-                        Console.WriteLine(response);
-                    }
-                    else
-                    {
-                        if (Program.EnableColors) Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine(response);
-                        if (Program.EnableColors) Console.ResetColor();
-                    }
+
+                    Console.WriteLine(response);
                     Console.WriteLine();
                 }
             }

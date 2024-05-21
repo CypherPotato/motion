@@ -8,7 +8,6 @@ namespace Motion.Parser;
 
 struct AtomBase
 {
-    public static readonly char Ch_ExpressionInlineExpressionStart = '@';
     public static readonly char Ch_ExpressionStart = '(';
     public static readonly char Ch_ExpressionEnd = ')';
     public static readonly char Ch_StringQuote = '"';
@@ -30,7 +29,7 @@ struct AtomBase
     {
         if (Children.Length > 0)
         {
-            return $"({Children[0].Content} {string.Join(' ', Children[1..])})";
+            return $"({Children[0].Content} [...{Children.Length - 1}])";
         }
         else if (Type == TokenType.Null)
         {
@@ -38,7 +37,7 @@ struct AtomBase
         }
         else if (Type == TokenType.Operator)
         {
-            return "Op. " + Content!.ToString()!;
+            return "Op. " + Content?.ToString();
         }
         else if (Type == TokenType.String)
         {

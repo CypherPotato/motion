@@ -77,23 +77,70 @@ public class MotionException : Exception
         StringBuilder sb = new StringBuilder();
         if (error.Filename is null)
         {
-            sb.AppendLine($"at line {error.Line}, col {error.Column}:");
+            sb.AppendLine($"error at line {error.Line}, col {error.Column}:");
         }
         else
         {
-            sb.AppendLine($"at file {error.Filename}, line {error.Line}, col {error.Column}:");
+            sb.AppendLine($"error at file {error.Filename}, line {error.Line}, col {error.Column}:");
         }
 
-        sb.AppendLine();
+        sb.AppendLine("     | ");
+        sb.Append($"{error.Line,4} | ");
         sb.AppendLine(error.LineText);
-        sb.AppendLine(new string(' ', Math.Max(0, error.Column - 1)) + new string('^', error.Length));
+        sb.Append("     | ");
+        sb.AppendLine(new string(' ', Math.Max(0, error.Column - 1)) + new string('-', error.Length));
 
         foreach (string line in error.Message.Split('\n'))
         {
+            sb.Append("     : ");
             sb.AppendLine(new string(' ', Math.Max(0, error.Column - 1)) + line.TrimStart());
         }
 
         return sb.ToString();
+    }
+
+    public static void DumpErrorMessage(MotionException error)
+    {
+        void Print(ConsoleColor color, object? message)
+        {
+            Console.ForegroundColor = color;
+            Console.Write(message);
+            Console.ResetColor();
+        }
+
+        Console.Write("at ");
+        Print(ConsoleColor.Blue, error.Filename ?? "<snippet>");
+        Console.Write(", line ");
+        Print(ConsoleColor.Blue, error.Line);
+        Console.Write(", col. ");
+        Print(ConsoleColor.Blue, error.Column);
+        Console.WriteLine(":");
+
+        Print(ConsoleColor.Blue, $"{' ',4} | ");
+        Console.WriteLine();
+
+        string before = error.LineText.Substring(0, error.Column - 1);
+        string current = error.LineText.Substring(error.Column - 1, error.Length);
+        string after = error.LineText.Substring(error.Column - 1 + error.Length);
+
+        Print(ConsoleColor.Blue, $"{error.Line,4} | ");
+        Console.Write(before);
+        Print(ConsoleColor.Red, current);
+        Console.Write(after);
+        Console.WriteLine();
+        Print(ConsoleColor.Blue, $"{' ',4} | ");
+        Print(ConsoleColor.Red, new string(' ', error.Column - 1));
+        Print(ConsoleColor.DarkRed, new string('-', error.Length));
+        Console.WriteLine();
+
+        foreach (string line in error.Message.Split('\n'))
+        {
+            Print(ConsoleColor.DarkBlue, $"{' ',4} : ");
+            Console.Write(new string(' ', error.Column - 1));
+            Print(ConsoleColor.Red, line);
+            Console.WriteLine();
+        }
+        Print(ConsoleColor.DarkBlue, $"{' ',4} : \n");
     }
 }
 

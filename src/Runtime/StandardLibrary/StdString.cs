@@ -38,6 +38,7 @@ internal class StdString : IMotionLibrary
         context.Methods.Add("print-number", PrintNumber);
         context.Methods.Add("to-string", NToString);
         context.Methods.Add("fmt", Fmt);
+        context.Methods.Add("replace", Replace);
         context.Methods.Add("levenshtein", ComputeLevenshteinDistance);
     }
 
@@ -50,6 +51,7 @@ internal class StdString : IMotionLibrary
     string? TrimStart(string? s) => s?.TrimStart();
     string? NToString(object? s) => s?.ToString();
     string PrintNumber(double n) => n.ToString("N2");
+    string Replace(Atom self, string input, string term, string? replace) => input.Replace(term, replace, self.HasKeyword("ignore-case") ? StringComparison.CurrentCultureIgnoreCase : StringComparison.Ordinal);
     string Fmt(string format, params object?[] items) => String.Format(format, items);
     string[] Explode(string sep, string s) => s.Split(sep);
     string Implode(string sep, params object?[] values) => string.Join(sep, values);

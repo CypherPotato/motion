@@ -101,7 +101,7 @@ public struct Atom
     {
         if (ItemCount < count)
         {
-            throw new MotionException($"This atom ({_ref}) expects at least {count} atoms. Got {ItemCount} instead.", _ref.Location, null);
+            throw new MotionException($"The atom {_ref} expects at least {count} atoms. Got {ItemCount} instead.", _ref.Location, null);
         }
     }
 
@@ -113,7 +113,7 @@ public struct Atom
     {
         if (ItemCount != count)
         {
-            throw new MotionException($"This atom ({_ref}) expects exacts {count} atoms. Got {ItemCount} instead.", _ref.Location, null);
+            throw new MotionException($"The atom {_ref} expects exacts {count} atoms. Got {ItemCount} instead.", _ref.Location, null);
         }
     }
 
@@ -142,7 +142,7 @@ public struct Atom
             {
                 n = "no";
             }
-            throw new MotionException($"This atom ({_ref}) expects {n} atoms. Got {ItemCount} instead.", _ref.Location, null);
+            throw new MotionException($"The atom {_ref} expects {n} atoms. Got {ItemCount} instead.", _ref.Location, null);
         }
     }
 
@@ -153,7 +153,7 @@ public struct Atom
     {
         if (ItemCount > 1)
         {
-            throw new MotionException($"This atom ({_ref}) doens't expects any other atoms.", _ref.Location, null);
+            throw new MotionException($"The atom {_ref} doens't expects any other atoms.", _ref.Location, null);
         }
     }
 
@@ -274,7 +274,7 @@ public struct Atom
         }
         if (b.Length != 1)
         {
-            throw new MotionException($"This atom expects an string of length equals to 1 (char).", _ref.Location, null);
+            throw new MotionException($"The atom expects an string of length equals to 1 (char).", _ref.Location, null);
         }
         ResetTokenValue();
         return b[0];

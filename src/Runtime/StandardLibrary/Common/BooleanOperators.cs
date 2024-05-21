@@ -27,14 +27,34 @@ internal class BooleanOperators : IMotionLibrary
         context.Methods.Add("if", If);
         context.Methods.Add("if-not", IfNot);
 
-        context.Methods.Add("<", (dynamic A, dynamic B) => A < B);
-        context.Methods.Add("<=", (dynamic A, dynamic B) => A <= B);
-        context.Methods.Add(">", (dynamic A, dynamic B) => A > B);
-        context.Methods.Add(">=", (dynamic A, dynamic B) => A >= B);
+        context.Methods.Add("<", Lt);
+        context.Methods.Add("<=", Lte);
+        context.Methods.Add(">", Gt);
+        context.Methods.Add(">=", Gte);
 
         context.Methods.Add("zerop", Zerop);
         context.Methods.Add("is-null", IsNull);
         context.Methods.Add("is-not-null", IsNotNull);
+    }
+
+    bool Gt(dynamic a, dynamic b)
+    {
+        return a > b;
+    }
+
+    bool Gte(dynamic a, dynamic b)
+    {
+        return a >= b;
+    }
+
+    bool Lt(dynamic a, dynamic b)
+    {
+        return a < b;
+    }
+
+    bool Lte(dynamic a, dynamic b)
+    {
+        return a <= b;
     }
 
     bool Eq(object? a, object? b)

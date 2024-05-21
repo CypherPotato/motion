@@ -31,8 +31,7 @@ public enum ExecutionContextScope
 /// </summary>
 public class ExecutionContext
 {
-    private AtomBase[] baseTokens;
-    internal CompilerFeature features = default;
+    internal CompilerResult compilerResult;
     int level = 0;
     internal StringWriter traceWriter = new StringWriter();
     ExecutionContext global;
@@ -67,7 +66,7 @@ public class ExecutionContext
     /// <summary>
     /// Gets the defined using statements for this execution context.
     /// </summary>
-    public IList<string> UsingStatements { get; private set; } = new List<string>();
+    public IList<string> UsingStatements { get; private set; }
 
     /// <summary>
     /// Gets the parent execution context, if any.
@@ -89,21 +88,20 @@ public class ExecutionContext
     /// </summary>
     public ExecutionContextScope Scope { get; set; }
 
-    internal static ExecutionContext CreateBaseContext(AtomBase[] tokens, CompilerFeature features)
+    internal static ExecutionContext CreateBaseContext(AtomBase[] tokens, CompilerResult result)
     {
-        var ctx = new ExecutionContext(tokens, ExecutionContextScope.Global, null, null, features, 0, new StringWriter());
+        var ctx = new ExecutionContext(result, ExecutionContextScope.Global, null, null, 0, new StringWriter());
         ctx.Scope = ExecutionContextScope.Global;
 
         return ctx;
     }
 
-    private ExecutionContext(AtomBase[] tokens, ExecutionContextScope scope, ExecutionContext? parent, ExecutionContext? global, CompilerFeature features, int level, StringWriter _traceLogger)
+    private ExecutionContext(CompilerResult result, ExecutionContextScope scope, ExecutionContext? parent, ExecutionContext? global, int level, StringWriter _traceLogger)
     {
         Parent = parent;
-        baseTokens = tokens;
         Scope = scope;
 
-        this.features = features;
+        this.compilerResult = result;
         this.level = level;
         this.traceWriter = _traceLogger;
         this.global = global ?? this;
@@ -114,6 +112,7 @@ public class ExecutionContext
         UserFunctions = new MotionCollection<MotionUserFunction>(this, true, false);
         Aliases = new MotionCollection<string>(this, true, false);
         CallingParameters = new MotionCollection<object?>(this, true, false);
+        UsingStatements = global?.UsingStatements ?? new List<string>();
     }
 
     internal void ImportLibrary(IMotionLibrary library)
@@ -295,7 +294,7 @@ public class ExecutionContext
 
     ExecutionContext Fork(ExecutionContextScope scope)
     {
-        return new ExecutionContext(baseTokens, scope, this, global, features, level + 1, traceWriter);
+        return new ExecutionContext(compilerResult, scope, this, global, level + 1, traceWriter);
     }
 
     /// <summary>
@@ -322,6 +321,20 @@ public class ExecutionContext
         return this;
     }
 
+    public object?[] Run(string additionalCode)
+    {
+        List<object?> results = new List<object?>();
+
+        var tokenizer = new Tokenizer(additionalCode, null, compilerResult.Options);
+
+        foreach (var token in tokenizer.Tokenize())
+        {
+            results.Add(EvaluateTokenItem(token, AtomBase.Undefined));
+        }
+
+        return results.ToArray();
+    }
+
     /// <summary>
     /// Executes the compiled code and returns all evaluated results from defined atoms in this context.
     /// </summary>
@@ -342,14 +355,14 @@ public class ExecutionContext
         {
             try
             {
-                object?[] results = new object[baseTokens.Length];
+                object?[] results = new object[compilerResult.tokens.Length];
 
-                for (int i = 0; i < baseTokens.Length; i++)
+                for (int i = 0; i < compilerResult.tokens.Length; i++)
                 {
                     if (CancellationToken?.IsCancellationRequested == true)
                         return results;
 
-                    AtomBase t = baseTokens[i];
+                    AtomBase t = compilerResult.tokens[i];
                     results[i] = EvaluateTokenItem(t, AtomBase.Undefined);
                 }
 
@@ -462,7 +475,7 @@ public class ExecutionContext
 
                             if (TryResolveMethod(name, out var methodValue))
                             {
-                                if (features.HasFlag(CompilerFeature.TraceRuntimeFunctionsCalls))
+                                if (compilerResult.Options.Features.HasFlag(CompilerFeature.TraceRuntimeFunctionsCalls))
                                 {
                                     isTracingResult = true;
                                     Trace($"{level}: {t}");
@@ -475,10 +488,10 @@ public class ExecutionContext
                             {
                                 if (TryResolveUserFunction(name, out var userFuncValue))
                                 {
-                                    if (features.HasFlag(CompilerFeature.TraceUserFunctionsCalls))
+                                    if (compilerResult.Options.Features.HasFlag(CompilerFeature.TraceUserFunctionsCalls))
                                     {
                                         isTracingResult = true;
-                                        if (features.HasFlag(CompilerFeature.TraceUserFunctionsVariables))
+                                        if (compilerResult.Options.Features.HasFlag(CompilerFeature.TraceUserFunctionsVariables))
                                         {
                                             StringBuilder s = new StringBuilder();
 
@@ -501,7 +514,7 @@ public class ExecutionContext
                                     string[] similar =
                                         Methods.Keys.Concat(UserFunctions.Keys)
                                         .Select(f => f.ToLower())
-                                        .Where(f => f.Contains(nameL) || StdString.ComputeLevenshteinDistance(f, nameL) <= 3)
+                                        .Where(f => f.Contains(nameL) || StdString.ComputeLevenshteinDistance(f, nameL) <= 2)
                                         .Take(5)
                                         .ToArray();
 
