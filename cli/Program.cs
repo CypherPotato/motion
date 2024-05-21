@@ -36,7 +36,7 @@ internal class Program
         }
         else
         {
-            ServerMessenger.Init();
+            await ServerMessenger.Init();
         }
     }
 

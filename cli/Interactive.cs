@@ -32,7 +32,7 @@ internal static class Interactive
         CompilerOptions options = new CompilerOptions()
         {
             Features =
-                    CompilerFeature.AllowParenthesislessCode
+                  CompilerFeature.AllowParenthesislessCode
                 | CompilerFeature.EnableConsoleMethods
                 | CompilerFeature.TraceUserFunctionsCalls
                 | CompilerFeature.TraceUserFunctionsVariables
