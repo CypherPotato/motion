@@ -24,7 +24,7 @@ internal class ComDeclarators : IMotionLibrary
     object? DefineAlias(Atom self, Symbol name, Symbol reference)
     {
         self.Context.GetScope(ExecutionContextScope.Global)
-            .Aliases.Add(name.Contents, reference.Contents);
+            .Aliases.Add(self, name.Contents, reference.Contents);
 
         return true;
     }
@@ -32,7 +32,7 @@ internal class ComDeclarators : IMotionLibrary
     object? DefineVariable(Atom self, Symbol name, object? value)
     {
         self.Context.GetScope(ExecutionContextScope.Function)
-            .Variables.Add(name.Contents, value);
+            .Variables.Add(self, name.Contents, value);
 
         return value;
     }
@@ -40,7 +40,7 @@ internal class ComDeclarators : IMotionLibrary
     object? SetVariable(Atom self, Symbol name, object? value)
     {
         self.Context.GetScope(ExecutionContextScope.Function)
-            .Variables.Set(name.Contents, value);
+            .Variables.Set(self, name.Contents, value);
 
         return value;
     }
@@ -48,7 +48,7 @@ internal class ComDeclarators : IMotionLibrary
     object? DefineConstant(Atom self, Symbol name, object? value)
     {
         self.Context.GetScope(ExecutionContextScope.Function)
-            .Constants.Add(name.Contents, value);
+            .Constants.Add(self, name.Contents, value);
 
         return value;
     }

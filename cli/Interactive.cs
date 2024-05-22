@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using static MotionCLI.Program;
 using Motion.Compilation;
+using Motion.Runtime;
 
 namespace MotionCLI;
 
@@ -25,7 +26,6 @@ internal static class Interactive
             callbacks: motionPromptCallback,
             configuration: new PromptConfiguration(
                 prompt: new FormattedString(Environment.UserDomainName + "> "),
-                completionItemDescriptionPaneBackground: AnsiColor.Rgb(30, 30, 30),
                 selectedCompletionItemBackground: AnsiColor.Rgb(30, 30, 30),
                 selectedTextBackground: AnsiColor.Rgb(20, 61, 102)));
 
@@ -80,18 +80,17 @@ internal static class Interactive
         }
 
         // get auto complete items
-        foreach (var variable in context.Variables.Keys)
-            motionPromptCallback.AutocompleteTerms.Add((variable, AnsiColor.Rgb(207, 247, 255), $"Variable {variable}"));
-        foreach (var constant in context.Constants.Keys)
-            motionPromptCallback.AutocompleteTerms.Add((constant, AnsiColor.Rgb(194, 218, 255), $"Constant {constant}"));
-        foreach (var method in context.Methods.Keys)
-            motionPromptCallback.AutocompleteTerms.Add((method, AnsiColor.Rgb(255, 233, 194), $"Method {method}"));
-        foreach (var func in context.UserFunctions.Keys)
-            motionPromptCallback.AutocompleteTerms.Add((func, AnsiColor.Rgb(242, 255, 204), $"User function {func}"));
+        foreach (AtomicInformation<object?> variable in context.Variables)
+            motionPromptCallback.AutocompleteTerms.Add((variable.Name, Program.Theme.MenuVariable, AutoMenuFunctions.BuildVariableAutomenu(variable)));
+        foreach (var constant in context.Constants)
+            motionPromptCallback.AutocompleteTerms.Add((constant.Name, Program.Theme.MenuConstant, AutoMenuFunctions.BuildConstantAutomenu(constant)));
+        foreach (var method in context.Methods)
+            motionPromptCallback.AutocompleteTerms.Add((method.Name, Program.Theme.MenuMethod, AutoMenuFunctions.BuildMethodAutomenu(method)));
+        foreach (AtomicInformation<MotionUserFunction> func in context.UserFunctions)
+            motionPromptCallback.AutocompleteTerms.Add((func.Name, Program.Theme.MenuUserFunction, AutoMenuFunctions.BuildUserFunctionAutomenu(func)));
         foreach (var alias in context.Aliases.Keys)
-            motionPromptCallback.AutocompleteTerms.Add((alias, AnsiColor.Rgb(255, 209, 245), $"Alias {alias}"));
+            motionPromptCallback.AutocompleteTerms.Add((alias, Program.Theme.MenuAlias, $"Alias {alias}"));
 
-        StringBuilder buildingExpression = new StringBuilder();
         while (true)
         {
             var response = await prompt.ReadLineAsync();
@@ -135,40 +134,25 @@ internal static class Interactive
                 continue;
             }
 
-            buildingExpression.AppendLine(data);
-            string code = buildingExpression.ToString();
+            var sw = Stopwatch.StartNew();
 
-            bool hadFileImportingErrors = false;
-
-
-            if (hadFileImportingErrors)
-                continue;
-
-            if (Compiler.GetParenthesisIndex(code) <= 0)
+            try
             {
-                Stopwatch sw = new Stopwatch();
-                sw.Start();
-                buildingExpression.Clear();
+                var result = context.Run(data);
+                sw.Stop();
 
-                try
+                Console.WriteLine(result.LastOrDefault()?.ToString()?.ReplaceLineEndings());
+
+                if (Program.Verbose)
                 {
-                    var result = context.Run(code);
-                    sw.Stop();
-
-                    Console.WriteLine(result.LastOrDefault()?.ToString()?.ReplaceLineEndings());
-
-                    if (Program.Verbose)
-                    {
-                        Console.Write($"\n<- {result?.GetType().FullName ?? "(NIL)"} in {sw.ElapsedMilliseconds}ms");
-                        Console.WriteLine();
-                    }
-
+                    Console.Write($"\n<- {result?.GetType().FullName ?? "(NIL)"} in {sw.ElapsedMilliseconds}ms");
                     Console.WriteLine();
                 }
-                catch (Exception ex)
-                {
-                    DumpError(ex);
-                }
+
+            }
+            catch (Exception ex)
+            {
+                DumpError(ex);
             }
         }
     }

@@ -33,8 +33,8 @@ internal class BooleanOperators : IMotionLibrary
         context.Methods.Add(">=", Gte);
 
         context.Methods.Add("zerop", Zerop);
-        context.Methods.Add("is-null", IsNull);
-        context.Methods.Add("is-not-null", IsNotNull);
+        context.Methods.Add("is-nil", IsNull);
+        context.Methods.Add("is-not-nil", IsNotNull);
     }
 
     bool Gt(dynamic a, dynamic b)

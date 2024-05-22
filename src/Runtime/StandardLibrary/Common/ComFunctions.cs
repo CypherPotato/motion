@@ -111,6 +111,6 @@ internal class ComFunctions : IMotionLibrary
         }
 
         MotionUserFunction func = new MotionUserFunction(args, documentation, body._ref);
-        self.Context.GetScope(ExecutionContextScope.Global).UserFunctions.Add(name, func);
+        self.Context.GetScope(ExecutionContextScope.Global).UserFunctions.Add(self, name, func);
     }
 }

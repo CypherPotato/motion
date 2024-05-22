@@ -110,6 +110,11 @@ class Tokenizer
         {
             if (depth == 0 && CompilerOptions.Features.HasFlag(CompilerFeature.AllowParenthesislessCode))
             {
+                if (ExpressionIndex > 0)
+                {
+                    throw new MotionException("unclosed expression block.", expStartSnapshot, null);
+                }
+
                 expStartSnapshot.Length = Interpreter.Position - expStartSnapshot.Position;
                 expression.Location = expStartSnapshot;
                 if (content.Length > 0)
@@ -131,6 +136,7 @@ class Tokenizer
         }
 
     finish:
+
         expression.SingleKeywords = emptyKeywords.ToArray();
         expression.Children = subTokens.ToArray();
         return expression;

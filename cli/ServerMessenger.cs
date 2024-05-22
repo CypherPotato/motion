@@ -37,15 +37,15 @@ internal static class ServerMessenger
                 promptString = json["domain"].GetString() + "> ";
 
                 foreach (JsonValue s in json["symbols"]["methods"].GetJsonArray())
-                    motionPromptCallback.AutocompleteTerms.Add((s.GetString(), AnsiColor.Rgb(255, 233, 194), $"Remote method {s.GetString()}"));
+                    motionPromptCallback.AutocompleteTerms.Add((s.GetString(), Program.Theme.MenuMethod, $"Remote method {s.GetString()}"));
                 foreach (JsonValue s in json["symbols"]["user_functions"].GetJsonArray())
-                    motionPromptCallback.AutocompleteTerms.Add((s.GetString(), AnsiColor.Rgb(242, 255, 204), $"Remote function {s.GetString()}"));
+                    motionPromptCallback.AutocompleteTerms.Add((s.GetString(), Program.Theme.MenuUserFunction, $"Remote function {s.GetString()}"));
                 foreach (JsonValue s in json["symbols"]["variables"].GetJsonArray())
-                    motionPromptCallback.AutocompleteTerms.Add((s.GetString(), AnsiColor.Rgb(207, 247, 255), $"Remote variable {s.GetString()}"));
+                    motionPromptCallback.AutocompleteTerms.Add((s.GetString(), Program.Theme.MenuVariable, $"Remote variable {s.GetString()}"));
                 foreach (JsonValue s in json["symbols"]["constants"].GetJsonArray())
-                    motionPromptCallback.AutocompleteTerms.Add((s.GetString(), AnsiColor.Rgb(194, 218, 255), $"Remote constant {s.GetString()}"));
+                    motionPromptCallback.AutocompleteTerms.Add((s.GetString(), Program.Theme.MenuConstant, $"Remote constant {s.GetString()}"));
                 foreach (JsonValue s in json["symbols"]["aliases"].GetJsonArray())
-                    motionPromptCallback.AutocompleteTerms.Add((s.GetString(), AnsiColor.Rgb(255, 209, 245), $"Remote alias {s.GetString()}"));
+                    motionPromptCallback.AutocompleteTerms.Add((s.GetString(), Program.Theme.MenuAlias, $"Remote alias {s.GetString()}"));
             }
             else if (resMsg.StatusCode == System.Net.HttpStatusCode.Forbidden)
             {

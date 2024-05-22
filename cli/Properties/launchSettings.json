@@ -2,7 +2,7 @@
   "profiles": {
     "MotionCLI": {
       "commandName": "Project",
-      "commandLineArgs": "-e http://localhost:4446/v1/motion -u gscatolin@outlook.com:m"
+      "commandLineArgs": "-f code.lisp"
     }
   }
 }

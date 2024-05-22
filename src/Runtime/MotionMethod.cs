@@ -56,7 +56,7 @@ public sealed class MotionUserFunction
         {
             string key = Arguments[i];
             object? value = context.EvaluateTokenItem(callingExpression.Children[i + 1], callingExpression);
-            context.CallingParameters.InternalSet(key, value);
+            context.CallingParameters.InternalSet(callingExpression.Location, key, value);
         }
 
         return context.EvaluateTokenItem(body, AtomBase.Undefined);

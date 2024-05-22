@@ -1,10 +1,12 @@
 ﻿using Motion.Parser;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace Motion.Runtime;
 
@@ -12,9 +14,9 @@ namespace Motion.Runtime;
 /// Represents an runtime collection of items that is used by the Motion language.
 /// </summary>
 /// <typeparam name="TValue">The type of items.</typeparam>
-public class MotionCollection<TValue>
+public class MotionCollection<TValue> : IEnumerable<AtomicInformation<TValue>>
 {
-    internal Dictionary<string, TValue> _m = new Dictionary<string, TValue>(StringComparer.InvariantCultureIgnoreCase);
+    internal List<AtomicInformation<TValue>> _m = new();
     private string? _namespace;
 
     /// <summary>
@@ -30,7 +32,7 @@ public class MotionCollection<TValue>
     /// <summary>
     /// Gets an array of keys on this <see cref="MotionCollection{TValue}"/>.
     /// </summary>
-    public string[] Keys { get => _m.Keys.ToArray(); }
+    public string[] Keys { get => GetKeys().ToArray(); }
 
     /// <summary>
     /// Gets the owner <see cref="ExecutionContext"/> of this collection.
@@ -42,6 +44,12 @@ public class MotionCollection<TValue>
         Context = context;
         CanInsert = canInsert;
         CanEdit = canEdit;
+    }
+
+    internal IEnumerable<string> GetKeys()
+    {
+        foreach (var at in _m)
+            yield return at.Name;
     }
 
     internal void StartNamespace(string? @namespace)
@@ -72,7 +80,13 @@ public class MotionCollection<TValue>
     /// </summary>
     /// <param name="name">The symbol name.</param>
     public bool Contains(string name)
-        => _m.ContainsKey(name);
+    {
+        foreach (var at in _m)
+            if (string.Compare(at.Name, name, true) == 0)
+                return true;
+
+        return false;
+    }
 
     /// <summary>
     /// Gets the value associated with the specified key.
@@ -82,7 +96,15 @@ public class MotionCollection<TValue>
     /// <returns>true if this <see cref="MotionCollection{TValue}"/> contains an element with the specified key; otherwise, false.</returns>
     public bool TryGetValue(string key, out TValue? value)
     {
-        return _m.TryGetValue(key, out value);
+        foreach (var at in _m)
+            if (string.Compare(at.Name, key, true) == 0)
+            {
+                value = at.Value;
+                return true;
+            }
+
+        value = default(TValue);
+        return false;
     }
 
     /// <summary>
@@ -93,11 +115,26 @@ public class MotionCollection<TValue>
     /// <exception cref="InvalidOperationException"></exception>
     public TValue Get(string key)
     {
-        if (!Contains(key))
-        {
-            throw new InvalidOperationException($"The name {key} is not defined in this context.");
-        }
-        return _m[key];
+        foreach (var at in _m)
+            if (string.Compare(at.Name, key, true) == 0)
+                return at.Value;
+
+        throw new InvalidOperationException($"The name {key} is not defined in this context.");
+    }
+
+    /// <summary>
+    /// Gets the value associated with the specified key.
+    /// </summary>
+    /// <param name="key">The defined symbol name in this collection.</param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    public AtomicInformation<TValue> GetAtomicReference(string key)
+    {
+        foreach (var at in _m)
+            if (string.Compare(at.Name, key, true) == 0)
+                return at;
+
+        throw new InvalidOperationException($"The name {key} is not defined in this context.");
     }
 
     /// <summary>
@@ -105,25 +142,31 @@ public class MotionCollection<TValue>
     /// </summary>
     /// <param name="key">The symbol name.</param>
     /// <param name="newValue">The object value.</param>
+    public void Set(string key, TValue value) => Set(new Atom(AtomBase.Undefined, AtomBase.Undefined, Context), key, value);
+
+    /// <summary>
+    /// Adds or sets the specified name in this <see cref="MotionCollection{TValue}"/>.
+    /// </summary>
+    /// <param name="key">The symbol name.</param>
+    /// <param name="newValue">The object value.</param>
     /// <exception cref="InvalidOperationException"></exception>
-    public void Set(string key, TValue newValue)
+    public void Set(Atom declaringAtom, string key, TValue newValue)
     {
         string _key = FormatInsertingKey(key);
-        if (_m.ContainsKey(_key))
-        {
-            if (CanEdit)
+
+        foreach (var at in _m)
+            if (string.Compare(at.Name, key, true) == 0)
             {
-                _m[_key] = newValue;
+                if (!CanEdit)
+                {
+                    throw new InvalidOperationException("Cannot change the value of this object in this context.");
+                }
+
+                at.SetValue(newValue);
+                return;
             }
-            else
-            {
-                throw new InvalidOperationException("Cannot change the value of this object in this context.");
-            }
-        }
-        else
-        {
-            Add(key, newValue);
-        }
+
+        Add(declaringAtom, key, newValue);
     }
 
     /// <summary>
@@ -131,8 +174,20 @@ public class MotionCollection<TValue>
     /// </summary>
     /// <param name="key">The symbol name.</param>
     /// <param name="value">The object value.</param>
+    public void Add(string key, TValue value) => Add(new Atom(AtomBase.Undefined, AtomBase.Undefined, Context), key, value);
+
+    /// <summary>
+    /// Adds the specified name and value in this <see cref="MotionCollection{TValue}"/>.
+    /// </summary>
+    /// <param name="key">The symbol name.</param>
+    /// <param name="value">The object value.</param>
     /// <exception cref="InvalidOperationException"></exception>
-    public void Add(string key, TValue value)
+    public void Add(Atom declaringAtom, string key, TValue value)
+    {
+        Add(declaringAtom._ref.Location, key, value);
+    }
+
+    internal void Add(TextInterpreterSnapshot location, string key, TValue value)
     {
         string _key = FormatInsertingKey(key);
 
@@ -145,11 +200,30 @@ public class MotionCollection<TValue>
             throw new InvalidOperationException("This symbol is already defined in this context.");
         }
 
-        _m.Add(_key, value);
+        _m.Add(new AtomicInformation<TValue>(location, _key, value));
     }
 
-    internal void InternalSet(string key, TValue value)
+    internal void InternalSet(TextInterpreterSnapshot location, string key, TValue value)
     {
-        _m[key] = value;
+        foreach (var at in _m)
+            if (string.Compare(at.Name, key, true) == 0)
+            {
+                at.SetValue(value);
+                return;
+            }
+
+        _m.Add(new AtomicInformation<TValue>(location, key, value));
+    }
+
+    /// <inheritdoc/>
+    public IEnumerator<AtomicInformation<TValue>> GetEnumerator()
+    {
+        return ((IEnumerable<AtomicInformation<TValue>>)_m).GetEnumerator();
+    }
+
+    /// <inheritdoc/>
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return ((IEnumerable)_m).GetEnumerator();
     }
 }

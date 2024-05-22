@@ -496,8 +496,8 @@ public class ExecutionContext
                                         {
                                             StringBuilder s = new StringBuilder();
 
-                                            foreach (KeyValuePair<string, object?> v in CallingParameters._m)
-                                                s.Append($"{v.Key} = {v.Value}");
+                                            foreach (AtomicInformation<object?> v in CallingParameters._m)
+                                                s.Append($"{v.Name} = {v.Value}");
 
                                             Trace($"{level}: {t} {{ {s} }}");
                                         }
