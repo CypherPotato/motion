@@ -8,6 +8,7 @@ using PrettyPrompt.Documents;
 using PrettyPrompt.Highlighting;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace MotionCLI;
@@ -21,12 +22,20 @@ internal class Program
     public static string? ServerAuth = null;
     public static string[] ImportedFiles = null!;
 
+    public static string _program = "";
     public static int _smallerImportedFileIndex = 0;
 
     public static Theme Theme = new Theme();
 
+    public static void SetTitle(int parenthesisIndex)
+    {
+        Console.Title = $"Motion CLI | {_program} | Current parenthesis index: {parenthesisIndex}";
+    }
+
     static async Task Main(string[] args)
     {
+        Trace.Listeners.RemoveAt(0);
+
         var cmdParser = new CommandLine.CommandLineParser(args);
 
         Verbose = cmdParser.IsDefined("verbose", 'v');
@@ -40,13 +49,14 @@ internal class Program
             .Select(f => f?.Length ?? 0)
             .Min();
 
-
         if (ServerEndpoint is null)
         {
+            _program = "Interactive";
             await Interactive.Init();
         }
         else
         {
+            _program = "Server messenger";
             await ServerMessenger.Init();
         }
     }
@@ -54,8 +64,8 @@ internal class Program
     internal class MotionPromptCallback : PromptCallbacks
     {
         public List<(string Term, ConsoleFormat Format, FormattedString Description)> AutocompleteTerms { get; set; } = new();
-        protected IReadOnlyCollection<FormatSpan> VisibleTokens { get; set; } = Array.Empty<FormatSpan>();
-
+        protected int Caret { get; set; }
+        public Prompt Parent { get; set; } = null!;
 
         protected override Task<TextSpan> GetSpanToReplaceByCompletionAsync(string text, int caret, CancellationToken cancellationToken)
         {
@@ -103,12 +113,22 @@ internal class Program
             );
         }
 
+        protected override async Task<(string Text, int Caret)> FormatInput(string text, int caret, KeyPress keyPress, CancellationToken cancellationToken)
+        {
+            Caret = caret;
+            //await Parent.Render();
+            return await base.FormatInput(text, caret, keyPress, cancellationToken);
+        }
+
         protected override Task<IReadOnlyCollection<FormatSpan>> HighlightCallbackAsync(string text, CancellationToken cancellationToken)
         {
-            List<FormatSpan> result = new List<FormatSpan>();
+            Dictionary<SyntaxItem, FormatSpan> result = new();
             SyntaxItem[] tree = Compiler.AnalyzeSyntax(text);
 
-            ;
+            int matchDirection = 0;
+            int matchDepth = -1;
+            int matchAfter = -1, matchBefore = -1;
+            SetTitle(Compiler.GetParenthesisIndex(text));
 
             for (int i = 0; i < tree.Length; i++)
             {
@@ -125,6 +145,26 @@ internal class Program
                 else if (item.Type is SyntaxItemType.StringLiteral)
                 {
                     format = Theme.StringLiteral;
+                }
+                else if (item.Type is SyntaxItemType.ExpressionStart)
+                {
+                    format = Theme.ParenthesisCommon;
+                    if (item.Position == Caret)
+                    {
+                        matchAfter = item.Position;
+                        matchDirection = 1;
+                        matchDepth = item.ExpressionDepth;
+                    }
+                }
+                else if (item.Type is SyntaxItemType.ExpressionEnd)
+                {
+                    format = Theme.ParenthesisCommon;
+                    if (item.Position == Caret)
+                    {
+                        matchBefore = item.Position;
+                        matchDirection = -1;
+                        matchDepth = item.ExpressionDepth;
+                    }
                 }
                 else if (item.Type is SyntaxItemType.NumberLiteral)
                 {
@@ -154,11 +194,56 @@ internal class Program
                     continue;
                 }
 
-                result.Add(new FormatSpan(textSpan, format));
+                result.Add(item, new FormatSpan(textSpan, format));
             }
 
-            VisibleTokens = result;
-            return Task.FromResult<IReadOnlyCollection<FormatSpan>>(result);
+            if (matchDepth >= 0)
+            {
+                if (matchDirection == 1)
+                {
+                    int n = 0;
+                    foreach (var key in result.Keys)
+                    {
+                        if (key.Position < matchAfter)
+                        {
+                            continue;
+                        }
+                        if (n == 0 && key.Type is SyntaxItemType.ExpressionStart && key.ExpressionDepth == matchDepth)
+                        {
+                            result[key] = new FormatSpan(result[key].Span, Program.Theme.ParenthesisMatch);
+                            n = 1;
+                        }
+                        else if (n == 1 && key.Type is SyntaxItemType.ExpressionEnd && key.ExpressionDepth == matchDepth)
+                        {
+                            result[key] = new FormatSpan(result[key].Span, Program.Theme.ParenthesisMatch);
+                            break;
+                        }                       
+                    }
+                }
+                else if (matchDirection == -1)
+                {
+                    int n = 0;
+                    foreach (var key in result.Keys.Reverse())
+                    {
+                        if (key.Position > matchBefore)
+                        {
+                            continue;
+                        }
+                        if (n == 0 && key.Type is SyntaxItemType.ExpressionEnd && key.ExpressionDepth == matchDepth)
+                        {
+                            result[key] = new FormatSpan(result[key].Span, Program.Theme.ParenthesisMatch);
+                            n = 1;
+                        }
+                        else if (n == 1 && key.Type is SyntaxItemType.ExpressionStart && key.ExpressionDepth == matchDepth)
+                        {
+                            result[key] = new FormatSpan(result[key].Span, Program.Theme.ParenthesisMatch);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            return Task.FromResult<IReadOnlyCollection<FormatSpan>>(result.Values);
         }
     }
 

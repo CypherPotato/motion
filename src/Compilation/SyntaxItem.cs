@@ -43,7 +43,9 @@ public class SyntaxItem
     /// </summary>
     public int Length { get; }
 
-    internal SyntaxItem(string contents, SyntaxItemType type, TextInterpreterSnapshot snapshot)
+    public int ExpressionDepth { get; }
+
+    internal SyntaxItem(string contents, SyntaxItemType type, int depth, TextInterpreterSnapshot snapshot)
     {
         Contents = contents;
         Type = type;
@@ -51,6 +53,7 @@ public class SyntaxItem
         Column = snapshot.Column;
         Position = snapshot.Position;
         Length = snapshot.Length;
+        ExpressionDepth = depth;
     }
 }
 

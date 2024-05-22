@@ -8,11 +8,11 @@ namespace Motion.Parser;
 
 struct TextInterpreterSnapshot
 {
-    public readonly int Line;
-    public readonly int Column;
-    public readonly int Position;
-    public readonly string LineText;
-    public readonly string? Filename;
+    public int Line;
+    public int Column;
+    public int Position;
+    public string LineText;
+    public string? Filename;
     public int Length;
 
     public TextInterpreterSnapshot(int line, int column, int position, int length, string lineText, string? filename)
@@ -84,7 +84,7 @@ class TextInterpreter
         {
             moved++;
             Position += incr;
-            if (InputString[Position] == '\n')
+            if (InputString.Length < Position && InputString[Position] == '\n')
             {
                 Line += incr;
             }

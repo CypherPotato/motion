@@ -39,20 +39,28 @@ class Analyzer
 
     void Analyse()
     {
+        int depth = 0;
         Interpreter.SkipIgnoreTokens();
 
     readNext:
         TextInterpreterSnapshot nextContentSnapshot = Interpreter.TakeSnapshot(1);
         char hit = Interpreter.ReadUntil(new char[] { ' ', '\t', '\r', '\n', AtomBase.Ch_ExpressionStart, AtomBase.Ch_ExpressionEnd }, true, out string content);
 
-
         if (hit == AtomBase.Ch_ExpressionStart)
-            LintedAtoms.Add(new SyntaxItem(hit.ToString(), SyntaxItemType.ExpressionStart, nextContentSnapshot));
+        {
+            LintedAtoms.Add(new SyntaxItem(hit.ToString(), SyntaxItemType.ExpressionStart, depth, nextContentSnapshot));
+            depth++;
+        }
+
+        TokenizePart(ref nextContentSnapshot, depth, content);
 
         if (hit == AtomBase.Ch_ExpressionEnd)
-            LintedAtoms.Add(new SyntaxItem(hit.ToString(), SyntaxItemType.ExpressionEnd, nextContentSnapshot));
-
-        TokenizePart(ref nextContentSnapshot, content);
+        {
+            depth--;
+            Interpreter.Move(-1);
+            LintedAtoms.Add(new SyntaxItem(hit.ToString(), SyntaxItemType.ExpressionEnd, depth, Interpreter.TakeSnapshot(1)));
+            Interpreter.Move(1);
+        }
 
         if (hit == '\0')
         {
@@ -64,7 +72,7 @@ class Analyzer
         }
     }
 
-    void TokenizePart(ref TextInterpreterSnapshot snapshot, string content)
+    void TokenizePart(ref TextInterpreterSnapshot snapshot, int depth, string content)
     {
         SyntaxItemType type = default;
         snapshot.Length = content.Length;
@@ -113,6 +121,6 @@ class Analyzer
             return;
         }
 
-        LintedAtoms.Add(new SyntaxItem(content, type, snapshot));
+        LintedAtoms.Add(new SyntaxItem(content, type, depth, snapshot));
     }
 }

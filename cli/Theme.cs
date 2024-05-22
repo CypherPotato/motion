@@ -19,6 +19,8 @@ public class Theme
     public ConsoleFormat Symbol { get; set; } = new ConsoleFormat(AnsiColor.Rgb(216, 235, 240));
     public ConsoleFormat Keyword { get; set; } = new ConsoleFormat(AnsiColor.Rgb(237, 207, 255));
     public ConsoleFormat Comment { get; set; } = new ConsoleFormat(AnsiColor.Rgb(106, 173, 127));
+    public ConsoleFormat ParenthesisCommon { get; set; } = new ConsoleFormat(AnsiColor.Rgb(115, 115, 115));
+    public ConsoleFormat ParenthesisMatch { get; set; } = new ConsoleFormat(AnsiColor.White, AnsiColor.Rgb(80, 112, 138));
 
     public ConsoleFormat MenuVariable { get; set; } = new ConsoleFormat(AnsiColor.Rgb(207, 247, 255));
     public ConsoleFormat MenuConstant { get; set; } = new ConsoleFormat(AnsiColor.Rgb(194, 218, 255));

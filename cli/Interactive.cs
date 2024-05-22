@@ -29,6 +29,8 @@ internal static class Interactive
                 selectedCompletionItemBackground: AnsiColor.Rgb(30, 30, 30),
                 selectedTextBackground: AnsiColor.Rgb(20, 61, 102)));
 
+        motionPromptCallback.Parent = prompt;
+
         CompilerOptions options = new CompilerOptions()
         {
             Features =
@@ -95,7 +97,7 @@ internal static class Interactive
         {
             var response = await prompt.ReadLineAsync();
             var data = response.Text;
-            
+
             if (data == "/exit")
             {
                 break;

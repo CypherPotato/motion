@@ -109,8 +109,7 @@ class Sanitizer
 
                     int len = i - stIndex;
                     string comment = input.Substring(stIndex, len);
-                    commentIndex.Add(new SyntaxItem(comment, SyntaxItemType.Comment,
-                        new TextInterpreterSnapshot(stLnIndex, stColIndex, stIndex, len, comment, null)));
+                    commentIndex.Add(new SyntaxItem(comment, SyntaxItemType.Comment, 0, new TextInterpreterSnapshot(stLnIndex, stColIndex, stIndex, len, comment, null)));
                 }
                 else
                 {

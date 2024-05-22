@@ -48,7 +48,7 @@ internal class StdRandom : IMotionLibrary
 
     object Next(Atom self)
     {
-        if (self.HasKeyword(":double"))
+        if (self.HasKeyword("double"))
             return NextDouble(self);
 
         if (self.ItemCount == 1)

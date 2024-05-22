@@ -46,7 +46,7 @@ public class AutoMenuFunctions
         b += new FormattedString("constant ");
         b += new FormattedString(information.Name, Program.Theme.MenuConstant);
         b += new FormattedString("\n\n");
-        b += new FormattedString("Type: ");
+        b += new FormattedString("type: ");
 
         if (information.Value is null)
         {
