@@ -110,7 +110,7 @@ class Tokenizer
         {
             if (depth == 0 && CompilerOptions.Features.HasFlag(CompilerFeature.AllowParenthesislessCode))
             {
-                if (ExpressionIndex > 0)
+                if (ExpressionIndex > 1)
                 {
                     throw new MotionException("unclosed expression block.", expStartSnapshot, null);
                 }

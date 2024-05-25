@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 using static MotionCLI.Program;
 using Motion.Compilation;
 using Motion.Runtime;
+using System.Reflection;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace MotionCLI;
 
@@ -20,12 +22,34 @@ internal static class Interactive
         Console.WriteLine($"Motion Messaging Client [Cli. {Program.ClientVersionString}/Lang. {Motion.Compiler.MotionVersion}]");
         Console.WriteLine("To get help, type /help.\n");
 
+        // resolve references
+        List<IMotionLibrary> references = new List<IMotionLibrary>();
+
+        if (Program.References.Length > 0)
+        {
+            foreach (string f in Program.References)
+            {
+                Assembly fromRef = Assembly.LoadFrom(f);
+                Type[] types = fromRef.GetTypes()
+                    .Where(r => r.GetCustomAttribute<LibraryEntrypointAttribute>() != null)
+                    .ToArray();
+
+                IMotionLibrary[] instances = types
+                    .Select(Activator.CreateInstance)
+                    .Select(o => (IMotionLibrary)o!)
+                    .ToArray();
+
+                foreach (IMotionLibrary instance in instances)
+                    references.Add(instance);
+            }
+        }
+
         var motionPromptCallback = new MotionPromptCallback();
         await using var prompt = new Prompt(
             persistentHistoryFilepath: "./history-file",
             callbacks: motionPromptCallback,
             configuration: new PromptConfiguration(
-                prompt: new FormattedString(Environment.UserDomainName + "> "),
+                prompt: new FormattedString(Environment.UserName + "> "),
                 selectedCompletionItemBackground: AnsiColor.Rgb(30, 30, 30),
                 selectedTextBackground: AnsiColor.Rgb(20, 61, 102)));
 
@@ -37,7 +61,9 @@ internal static class Interactive
                   CompilerFeature.AllowParenthesislessCode
                 | CompilerFeature.EnableConsoleMethods
                 | CompilerFeature.TraceUserFunctionsCalls
-                | CompilerFeature.TraceUserFunctionsVariables
+                | CompilerFeature.TraceUserFunctionsVariables,
+
+            Libraries = references
         };
 
         Motion.Runtime.ExecutionContext context;
@@ -143,7 +169,7 @@ internal static class Interactive
                 var result = context.Run(data);
                 sw.Stop();
 
-                Console.WriteLine(result.LastOrDefault()?.ToString()?.ReplaceLineEndings());
+                Console.WriteLine(result?.ToString()?.ReplaceLineEndings());
 
                 if (Program.Verbose)
                 {

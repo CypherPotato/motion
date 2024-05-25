@@ -32,9 +32,6 @@ public class AutoMenuFunctions
         }
 
         b += new FormattedString("\n");
-        b += new FormattedString("defined in: ");
-        b += new FormattedString(information.Filename + ":" + information.Line, Program.Theme.MenuHighlight);
-        b += new FormattedString("\n");
 
         return b;
     }
@@ -60,9 +57,6 @@ public class AutoMenuFunctions
         }
 
         b += new FormattedString("\n");
-        b += new FormattedString("defined in: ");
-        b += new FormattedString(information.Filename + ":" + information.Line, Program.Theme.MenuHighlight);
-        b += new FormattedString("\n");
 
         return b;
     }
@@ -86,10 +80,6 @@ public class AutoMenuFunctions
 
         b += new FormattedString("\n");
         b += new FormattedString(information.Value.Documentation);
-        b += new FormattedString("\n\n");
-
-        b += new FormattedString("defined in: ");
-        b += new FormattedString(information.Filename.Substring(Program._smallerImportedFileIndex) + ":" + information.Line, Program.Theme.MenuHighlight);
         b += new FormattedString("\n");
 
         return b;

@@ -123,6 +123,21 @@ public class MotionCollection<TValue> : IEnumerable<AtomicInformation<TValue>>
     }
 
     /// <summary>
+    /// Gets the value associated with the specified key or the default value if not found/defined.
+    /// </summary>
+    /// <param name="key">The defined symbol name in this collection.</param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    public TValue? GetOrDefault(string key)
+    {
+        foreach (var at in _m)
+            if (string.Compare(at.Name, key, true) == 0)
+                return at.Value;
+
+        return default;
+    }
+
+    /// <summary>
     /// Gets the value associated with the specified key.
     /// </summary>
     /// <param name="key">The defined symbol name in this collection.</param>

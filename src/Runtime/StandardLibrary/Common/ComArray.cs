@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections;
+using System.Dynamic;
 
 namespace Motion.Runtime.StandardLibrary.Common;
 
@@ -14,11 +10,22 @@ internal class ComArray : IMotionLibrary
     public void ApplyMembers(ExecutionContext context)
     {
         context.Methods.Add("make-array", MakeArray);
+        context.Methods.Add("make-object", MakeObject);
         context.Methods.Add("dotimes", DoTimes);
         context.Methods.Add("map", Map);
         context.Methods.Add("while", While);
         context.Methods.Add("array-count", ArrayCount);
         context.Methods.Add("aref", Aref);
+    }
+
+    object? MakeObject(Atom self)
+    {
+        ExpandoObject obj = new ExpandoObject();
+        foreach(string word in self.Keywords)
+        {
+            obj.TryAdd(word, self.GetAtom(word).Nullable()?.GetObject());
+        }
+        return obj;
     }
 
     object?[] MakeArray(Atom self)

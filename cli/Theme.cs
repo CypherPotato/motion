@@ -22,6 +22,14 @@ public class Theme
     public ConsoleFormat ParenthesisCommon { get; set; } = new ConsoleFormat(AnsiColor.Rgb(115, 115, 115));
     public ConsoleFormat ParenthesisMatch { get; set; } = new ConsoleFormat(AnsiColor.White, AnsiColor.Rgb(80, 112, 138));
 
+    public ConsoleFormat Error { get; set; } = new ConsoleFormat(AnsiColor.Rgb(255, 102, 102));
+
+    public ConsoleFormat MarkdownHeading3 { get; set; } = new ConsoleFormat(AnsiColor.Rgb(95, 175, 0));
+    public ConsoleFormat MarkdownHeading2 { get; set; } = new ConsoleFormat(AnsiColor.Rgb(135, 215, 255));
+    public ConsoleFormat MarkdownHeading1 { get; set; } = new ConsoleFormat(AnsiColor.Rgb(215, 135, 95));
+    public ConsoleFormat MarkdownHeading { get; set; } = new ConsoleFormat(AnsiColor.Rgb(255, 175, 175));
+    public ConsoleFormat MarkdownCode { get; set; } = new ConsoleFormat(AnsiColor.Rgb(215, 215, 95));
+
     public ConsoleFormat MenuVariable { get; set; } = new ConsoleFormat(AnsiColor.Rgb(207, 247, 255));
     public ConsoleFormat MenuConstant { get; set; } = new ConsoleFormat(AnsiColor.Rgb(194, 218, 255));
     public ConsoleFormat MenuUserFunction { get; set; } = new ConsoleFormat(AnsiColor.Rgb(255, 233, 194));

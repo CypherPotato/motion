@@ -33,6 +33,7 @@ internal class BooleanOperators : IMotionLibrary
         context.Methods.Add(">=", Gte);
 
         context.Methods.Add("zerop", Zerop);
+        context.Methods.Add("if-nil", IfNull);
         context.Methods.Add("is-nil", IsNull);
         context.Methods.Add("is-not-nil", IsNotNull);
     }
@@ -99,6 +100,29 @@ internal class BooleanOperators : IMotionLibrary
     bool Zerop(dynamic a)
     {
         return a == 0;
+    }
+
+
+    object? IfNull(Atom self)
+    {
+        self.EnsureExactItemCount(3);
+
+        bool isUndefinedSym = false;
+        var atz = self.GetAtom(1);
+
+        if (atz.Type == AtomType.Symbol && !atz.Context.IsSymbolDefined(atz.GetSymbol())) 
+        {
+            isUndefinedSym = true;
+        }
+
+        if (!isUndefinedSym && atz.Nullable()?.GetObject() is { } obj)
+        {
+            return obj;
+        }
+        else
+        {
+            return self.GetAtom(2).Nullable()?.GetObject();
+        }
     }
 
     bool IsNull(object? b)

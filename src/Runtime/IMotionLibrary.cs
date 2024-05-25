@@ -23,3 +23,11 @@ public interface IMotionLibrary
     /// <param name="context">The runtime context where the Motion code is running.</param>
     public void ApplyMembers(ExecutionContext context);
 }
+
+/// <summary>
+/// Specifies that this <see cref="IMotionLibrary"/> is an library entrypoint.
+/// </summary>
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
+public sealed class LibraryEntrypointAttribute : Attribute
+{
+}

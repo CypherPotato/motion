@@ -1,5 +1,6 @@
 ﻿using Motion;
 using Motion.Compilation;
+using Motion.Parser;
 using Motion.Runtime;
 using PrettyPrompt;
 using PrettyPrompt.Completion;
@@ -7,6 +8,7 @@ using PrettyPrompt.Consoles;
 using PrettyPrompt.Documents;
 using PrettyPrompt.Highlighting;
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -21,15 +23,16 @@ internal class Program
     public static string? ServerEndpoint = null;
     public static string? ServerAuth = null;
     public static string[] ImportedFiles = null!;
+    public static string[] References = null!;
 
     public static string _program = "";
     public static int _smallerImportedFileIndex = 0;
 
     public static Theme Theme = new Theme();
 
-    public static void SetTitle(int parenthesisIndex)
+    public static void SetTitle(string? message)
     {
-        Console.Title = $"Motion CLI | {_program} | Current parenthesis index: {parenthesisIndex}";
+        Console.Title = $"Motion CLI | {_program}" + (message is null ? "" : " | " + message);
     }
 
     static async Task Main(string[] args)
@@ -42,12 +45,15 @@ internal class Program
         ServerEndpoint = cmdParser.GetValue("endpoint", 'e');
         ServerAuth = cmdParser.GetValue("auth", 'u');
         ImportedFiles = cmdParser.GetValues("file", 'f').ToArray();
+        References = cmdParser.GetValues("ref", 'r').ToArray();
 
-        _smallerImportedFileIndex = ImportedFiles
+        _smallerImportedFileIndex = 
+            ImportedFiles.Length > 0 ?
+            ImportedFiles
             .Select(Path.GetFullPath)
             .Select(Path.GetDirectoryName)
             .Select(f => f?.Length ?? 0)
-            .Min();
+            .Min() : 0;
 
         if (ServerEndpoint is null)
         {
@@ -65,7 +71,9 @@ internal class Program
     {
         public List<(string Term, ConsoleFormat Format, FormattedString Description)> AutocompleteTerms { get; set; } = new();
         protected int Caret { get; set; }
+        protected ConsoleKey LastPressedKey { get; set; }
         public Prompt Parent { get; set; } = null!;
+        public bool GotError { get; set; } = false;
 
         protected override Task<TextSpan> GetSpanToReplaceByCompletionAsync(string text, int caret, CancellationToken cancellationToken)
         {
@@ -113,22 +121,53 @@ internal class Program
             );
         }
 
+        protected override Task<KeyPress> TransformKeyPressAsync(string text, int caret, KeyPress keyPress, CancellationToken cancellationToken)
+        {
+            if (keyPress.ConsoleKeyInfo.Key == ConsoleKey.Enter && !keyPress.ConsoleKeyInfo.Modifiers.HasFlag(ConsoleModifiers.Shift))
+            {
+                int pIndex = Compiler.GetParenthesisIndex(text);
+                if (pIndex > 0)
+                {
+                    GotError = true;
+                    Program.SetTitle("Unclosed parenthesis detected.");
+                    return Task.FromResult(new KeyPress(new ConsoleKeyInfo('\0', ConsoleKey.None, false, false, false), null));
+                }
+                else if (pIndex < 0)
+                {
+                    GotError = true;
+                    Program.SetTitle("Extra parenthesis detected.");
+                    return Task.FromResult(new KeyPress(new ConsoleKeyInfo('\0', ConsoleKey.None, false, false, false), null));
+                }
+            }
+
+            return base.TransformKeyPressAsync(text, caret, keyPress, cancellationToken);
+        }
+
         protected override async Task<(string Text, int Caret)> FormatInput(string text, int caret, KeyPress keyPress, CancellationToken cancellationToken)
         {
             Caret = caret;
+            LastPressedKey = keyPress.ConsoleKeyInfo.Key;
             //await Parent.Render();
             return await base.FormatInput(text, caret, keyPress, cancellationToken);
         }
 
         protected override Task<IReadOnlyCollection<FormatSpan>> HighlightCallbackAsync(string text, CancellationToken cancellationToken)
         {
+            if (GotError)
+            {
+                GotError = false;
+                return Task.FromResult<IReadOnlyCollection<FormatSpan>>(new FormatSpan[]
+                {
+                    new FormatSpan(new TextSpan(0, text.Length), new ConsoleFormat(AnsiColor.Red, Underline: true))
+                });
+            }
+
             Dictionary<SyntaxItem, FormatSpan> result = new();
             SyntaxItem[] tree = Compiler.AnalyzeSyntax(text);
 
             int matchDirection = 0;
             int matchDepth = -1;
             int matchAfter = -1, matchBefore = -1;
-            SetTitle(Compiler.GetParenthesisIndex(text));
 
             for (int i = 0; i < tree.Length; i++)
             {
@@ -149,7 +188,7 @@ internal class Program
                 else if (item.Type is SyntaxItemType.ExpressionStart)
                 {
                     format = Theme.ParenthesisCommon;
-                    if (item.Position == Caret)
+                    if (item.Position == Caret && LastPressedKey != ConsoleKey.Enter)
                     {
                         matchAfter = item.Position;
                         matchDirection = 1;
@@ -159,7 +198,7 @@ internal class Program
                 else if (item.Type is SyntaxItemType.ExpressionEnd)
                 {
                     format = Theme.ParenthesisCommon;
-                    if (item.Position == Caret)
+                    if (item.Position == Caret && LastPressedKey != ConsoleKey.Enter)
                     {
                         matchBefore = item.Position;
                         matchDirection = -1;
@@ -217,7 +256,7 @@ internal class Program
                         {
                             result[key] = new FormatSpan(result[key].Span, Program.Theme.ParenthesisMatch);
                             break;
-                        }                       
+                        }
                     }
                 }
                 else if (matchDirection == -1)

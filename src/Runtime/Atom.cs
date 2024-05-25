@@ -40,14 +40,18 @@ public struct Atom
         return evaluatedResult;
     }
 
+
+    AtomBase GetRef() => _ref.Type == TokenType.Undefined ? _parent : _ref;
+
+
     T ThrowInvalidTkType<T>(string requestedType)
     {
-        throw new MotionException($"Cannot cast the current atom value. Expected {requestedType}, but got {_ref.Type}.", _ref.Location, null);
+        throw new MotionException($"Cannot cast the current atom value. Expected {requestedType}, but got {_ref.Type}.", GetRef().Location, null);
     }
 
     T ThrowNullObject<T>(string requestedType)
     {
-        throw new MotionException($"Error caught when trying to read expected {requestedType}, which got NIL instead.", _ref.Location, null);
+        throw new MotionException($"Error caught when trying to read expected {requestedType}, which got NIL instead.", GetRef().Location, null);
     }
 
     /// <summary>
@@ -101,7 +105,7 @@ public struct Atom
     {
         if (ItemCount < count)
         {
-            throw new MotionException($"The atom {_ref} expects at least {count} atoms. Got {ItemCount} instead.", _ref.Location, null);
+            throw new MotionException($"The atom {_ref} expects at least {count} atoms. Got {ItemCount} instead.", GetRef().Location, null);
         }
     }
 
@@ -113,7 +117,7 @@ public struct Atom
     {
         if (ItemCount != count)
         {
-            throw new MotionException($"The atom {_ref} expects exacts {count} atoms. Got {ItemCount} instead.", _ref.Location, null);
+            throw new MotionException($"The atom {_ref} expects exacts {count} atoms. Got {ItemCount} instead.", GetRef().Location, null);
         }
     }
 
@@ -142,7 +146,7 @@ public struct Atom
             {
                 n = "no";
             }
-            throw new MotionException($"The atom {_ref} expects {n} atoms. Got {ItemCount} instead.", _ref.Location, null);
+            throw new MotionException($"The atom {_ref} expects {n} atoms. Got {ItemCount} instead.", GetRef().Location, null);
         }
     }
 
@@ -153,7 +157,7 @@ public struct Atom
     {
         if (ItemCount > 1)
         {
-            throw new MotionException($"The atom {_ref} doens't expects any other atoms.", _ref.Location, null);
+            throw new MotionException($"The atom {_ref} doens't expects any other atoms.", GetRef().Location, null);
         }
     }
 
@@ -274,7 +278,7 @@ public struct Atom
         }
         if (b.Length != 1)
         {
-            throw new MotionException($"The atom expects an string of length equals to 1 (char).", _ref.Location, null);
+            throw new MotionException($"The atom expects an string of length equals to 1 (char).", GetRef().Location, null);
         }
         ResetTokenValue();
         return b[0];

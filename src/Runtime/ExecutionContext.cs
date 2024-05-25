@@ -128,6 +128,29 @@ public class ExecutionContext
     }
 
     /// <summary>
+    /// Tries to resolve an variable, constant or parameter from the specified name. This method searches in the current execution context
+    /// and parent ones.
+    /// </summary>
+    /// <param name="symbolName">The symbol name.</param>
+    /// <param name="value">When this method returns, contains the value associated with the specified key, if the key is found; otherwise, the default value for the type of the value parameter. This parameter is passed uninitialized.</param>
+    /// <returns>true if this <see cref="ExecutionContext"/> contains an element with the specified key; otherwise, false.</returns>
+    public bool TryGetValue(string symbolName, [MaybeNullWhen(true)] out object? value)
+    {
+        return TryResolveVariable(symbolName, out value);
+    }
+
+    /// <summary>
+    /// Tries to resolve an variable, constant or parameter from the specified name and returns it's value, if any. This method searches in the current execution context
+    /// and parent ones.
+    /// </summary>
+    /// <param name="symbolName">The symbol name.</param>
+    public object? GetValue(string symbolName)
+    {
+        TryResolveVariable(symbolName, out var value);
+        return value;
+    }
+
+    /// <summary>
     /// Imports methods, variables and user functions from another <see cref="ExecutionContext"/>, replacing the actual
     /// instance with the ones from the another context.
     /// </summary>
@@ -164,7 +187,8 @@ public class ExecutionContext
         if (TryResolveAlias(symbol, out _)) return true;
         if (TryResolveMethod(symbol, out _)) return true;
         if (TryResolveUserFunction(symbol, out _)) return true;
-        if (TryResolveVariable(symbol, out _)) return true;
+        // variables can be overriden in different contexts
+        // if (TryResolveVariable(symbol, out _)) return true;
         return false;
     }
 
@@ -322,15 +346,24 @@ public class ExecutionContext
         return this;
     }
 
-    public object?[] Run(string additionalCode)
+    public object? Run(string additionalCode)
     {
         List<object?> results = new List<object?>();
 
-        var tokenizer = new Tokenizer(additionalCode, null, compilerResult.Options);
+        var atoms = new Tokenizer(additionalCode, null, compilerResult.Options)
+            .Tokenize()
+            .ToArray();
 
-        foreach (var token in tokenizer.Tokenize())
+        for (int i = 0; i < atoms.Length; i++)
         {
-            results.Add(EvaluateTokenItem(token, AtomBase.Undefined));
+            if (i == atoms.Length - 1)
+            {
+                return EvaluateTokenItem(atoms[i], AtomBase.Undefined);
+            }
+            else
+            {
+                EvaluateTokenItem(atoms[i], AtomBase.Undefined);
+            }
         }
 
         return results.ToArray();
@@ -447,11 +480,12 @@ public class ExecutionContext
 
                 case TokenType.Expression:
                     {
-                        if (t.Children.Length == 0)
+                        int count = t.Children.Length;
+                        if (count == 0)
                         {
                             return null;
                         }
-                        else if (t.Children.Length == 1)
+                        else if (count == 1)
                         {
                             return EvaluateTokenItem(t.Children[0], t);
                         }
@@ -460,7 +494,18 @@ public class ExecutionContext
                             var firstChildren = t.Children[0];
                             if (firstChildren.Type != TokenType.Symbol && firstChildren.Type != TokenType.Operator)
                             {
-                                throw new MotionException($"method or operator expected.", firstChildren.Location, null);
+                                // run the last value
+                                for (int i = 0; i < count; i++)
+                                {
+                                    if (i == count - 1)
+                                    {
+                                        return EvaluateTokenItem(t.Children[i], t);
+                                    }
+                                    else
+                                    {
+                                        EvaluateTokenItem(t.Children[i], t);
+                                    }
+                                }
                             }
 
                             string name = firstChildren.Content!.ToString()!;

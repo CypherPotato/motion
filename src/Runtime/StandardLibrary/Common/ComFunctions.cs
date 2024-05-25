@@ -85,8 +85,9 @@ internal class ComFunctions : IMotionLibrary
         self.Context.Global.UsingStatements.Add(name.Contents);
     }
 
-    void Defun(Atom self)
+    string Defun(Atom self)
     {
+        self.EnsureMinimumItemCount(4);
         string name = self.GetAtom(1).GetSymbol();
         string[] args;
         string? documentation;
@@ -112,5 +113,7 @@ internal class ComFunctions : IMotionLibrary
 
         MotionUserFunction func = new MotionUserFunction(args, documentation, body._ref);
         self.Context.GetScope(ExecutionContextScope.Global).UserFunctions.Add(self, name, func);
+
+        return name.ToUpper();
     }
 }
