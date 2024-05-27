@@ -4,184 +4,151 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Motion.Parser;
+namespace Motion.Parser.V2;
 
-struct TextInterpreterSnapshot
+internal class TextInterpreter : IDisposable
 {
-    public int Line;
-    public int Column;
-    public int Position;
-    public string LineText;
-    public string? Filename;
-    public int Length;
+    private TextReader reader;
+    private TextPosition position;
+    private char current;
+    private TextInterpreterExceptionManager expManager;
+    private string? fileName;
 
-    public TextInterpreterSnapshot(int line, int column, int position, int length, string lineText, string? filename)
+    public TextInterpreterExceptionManager ExceptionManager { get => expManager; }
+
+    public TextPosition Position
     {
-        Line = line;
-        Column = column;
-        Length = length;
-        Position = position;
-        LineText = lineText;
-        Filename = filename;
+        get => position;
     }
-}
 
-class TextInterpreter
-{
-    public string InputString { get; private set; }
-    public int Position { get; private set; } = 0;
-    public int Length { get; private set; }
-    public int Line { get; private set; } = 1;
-    public string? Filename { get; set; }
-
-    public int Column
+    public bool CanRead
     {
-        get
+        get => this.reader.Peek() != -1;
+    }
+
+    public char Current
+    {
+        get => current;
+    }
+
+    public TextInterpreterSnapshot GetSnapshot(int length) => new TextInterpreterSnapshot(position.line + 1, position.column + 1, position.index, length, fileName);
+
+    public TextInterpreter(string? fileName, TextReader reader)
+    {
+        this.reader = reader ?? throw new ArgumentNullException(nameof(reader));
+        this.current = '\0';
+        this.position = new TextPosition();
+        this.expManager = new TextInterpreterExceptionManager(this);
+        this.fileName = fileName;
+    }
+
+    public char Peek()
+    {
+        var next = reader.Peek();
+
+        if (next == -1)
         {
-            int col = 1;
-            for (int n = 0; n < Position; n++)
-            {
-                col++;
-                char m = InputString[n];
-                if (m == '\n')
+            return '\0';
+        }
+
+        return (char)next;
+    }
+
+    public char Read()
+    {
+        var next = reader.Read();
+
+        if (next == -1)
+        {
+            throw ExceptionManager.NotFinishedString();
+        }
+
+        this.position.index += 1;
+        this.current = (char)next;
+
+        switch (next)
+        {
+            case '\r':
+                // Normalize '\r\n' line encoding to '\n'.
+                if (reader.Peek() == '\n')
                 {
-                    col = 1;
+                    this.position.index += 1;
+                    reader.Read();
                 }
-            }
-            return col;
+                goto case '\n';
+
+            case '\n':
+                this.position.line += 1;
+                this.position.column = 0;
+                return '\n';
+
+            default:
+                this.position.column += 1;
+                return (char)next;
         }
     }
 
-    public string CurrentLine
+    public void SkipComment()
     {
-        get
+        var peek = Peek();
+
+        if (peek == AtomBase.Ch_CommentChar)
         {
-            return InputString.Split('\n')[Line - 1];
-        }
-    }
-
-    public TextInterpreter(string source, string? filename)
-    {
-        InputString = source;
-        Length = InputString.Length;
-        Filename = filename;
-    }
-
-    public TextInterpreterSnapshot TakeSnapshot(int length)
-    {
-        return new TextInterpreterSnapshot(Line, Column, Position, length, CurrentLine, Filename);
-    }
-
-    public bool CanRead()
-    {
-        return Position < InputString.Length;
-    }
-
-    public void Move(int count)
-    {
-        int moved = 0, incr = count > 0 ? 1 : -1;
-        while (moved < Math.Abs(count) && Position > 0)
-        {
-            moved++;
-            Position += incr;
-            if (InputString.Length < Position && InputString[Position] == '\n')
+            bool ignoring = true;
+            while (ignoring && CanRead)
             {
-                Line += incr;
-            }
-        }
-    }
-
-    public int Read(out char c)
-    {
-        if (InputString.Length <= Position)
-        {
-            c = '\0';
-            return -1;
-        }
-        c = InputString[Position];
-        Position++;
-        if (c == '\n') Line++;
-        return 1;
-    }
-
-    public string ReadAtLeast(int count)
-    {
-        StringBuilder sb = new StringBuilder();
-
-        int n = 0;
-        while (n < count)
-        {
-            int j = Read(out char c);
-            if (j >= 0)
-            {
-                sb.Append(c);
-                n++;
-            }
-            else break;
-        }
-
-        return sb.ToString();
-    }
-
-    public char ReadUntil(Span<char> untilChars, bool wrapStringToken, out string result)
-    {
-        char hit = '\0';
-        StringBuilder sb = new StringBuilder();
-
-        bool inString = false;
-        char b = '\0';
-
-        while (Read(out char c) > 0)
-        {
-            if (wrapStringToken && c == AtomBase.Ch_StringQuote && b != '\\')
-            {
-                inString = !inString;
-            }
-
-            if (inString)
-            {
-                sb.Append(c);
-                b = c;
-                continue;
-            }
-
-            if (untilChars.Contains(c))
-            {
-                hit = c;
-                break;
-            }
-
-            sb.Append(c);
-            b = c;
-        }
-
-        result = sb.ToString();
-        return hit;
-    }
-
-    public void SkipIgnoreTokens()
-    {
-        bool skipping = true;
-        while (skipping)
-        {
-            if (Read(out char c) > 0)
-            {
-                if (IsIgnoreToken(c))
+                if (IsNewLine(Peek()))
                 {
-                    continue; // whitespace
+                    break;
                 }
                 else
                 {
-                    Move(-1);
-                    break;
+                    Read();
                 }
             }
-            else break;
         }
     }
 
-    public static bool IsIgnoreToken(char c)
+    public void SkipWhitespace()
     {
-        return c == ' ' || c == '\t' || c == '\r' || c == '\t' || c == '\n';
+        while (IsWhiteSpace(Peek()))
+        {
+            Read();
+        }
     }
+
+    public char AssertAny(params char[] next)
+    {
+        var p = Peek();
+        for (int i = 0; i < next.Length; i++)
+        {
+            if (next[i] == p)
+                return p;
+        }
+
+        throw ExceptionManager.UnexpectedToken(p.ToString());
+    }
+
+    public void Assert(char next)
+    {
+        if (Peek() == next)
+        {
+            Read();
+        }
+        else
+        {
+            throw ExceptionManager.ExpectToken(next.ToString());
+        }
+    }
+
+    public void Dispose()
+    {
+        reader.Dispose();
+    }
+
+    public static bool IsWhiteSpace(char c)
+        => c == ' ' || c == '\t' || c == '\n' || c == '\r';
+
+    public static bool IsNewLine(char c)
+        => c == '\n' || c == '\r';
 }

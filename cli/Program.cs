@@ -47,7 +47,7 @@ internal class Program
         ImportedFiles = cmdParser.GetValues("file", 'f').ToArray();
         References = cmdParser.GetValues("ref", 'r').ToArray();
 
-        _smallerImportedFileIndex = 
+        _smallerImportedFileIndex =
             ImportedFiles.Length > 0 ?
             ImportedFiles
             .Select(Path.GetFullPath)
@@ -163,7 +163,11 @@ internal class Program
             }
 
             Dictionary<SyntaxItem, FormatSpan> result = new();
-            SyntaxItem[] tree = Compiler.AnalyzeSyntax(text);
+
+            using var analyzer = new SyntaxClassifier(CompilerSource.FromCode(text));
+            analyzer.Classify();
+
+            var tree = analyzer.Result;
 
             int matchDirection = 0;
             int matchDepth = -1;

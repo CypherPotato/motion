@@ -9,7 +9,7 @@ namespace Motion.Compilation;
 /// <summary>
 /// Represents an Motion source code.
 /// </summary>
-public sealed class CompilerSource
+public sealed class CompilerSource : IDisposable
 {
     /// <summary>
     /// Gets or sets the file name of this Motion source code.
@@ -19,16 +19,31 @@ public sealed class CompilerSource
     /// <summary>
     /// Gets or sets the Motion source code contents.
     /// </summary>
-    public string Source { get; set; }
+    public required TextReader Source { get; set; }
 
-    /// <summary>
-    /// Creates an new <see cref="CompilerSource"/> instance with specified parameters.
-    /// </summary>
-    /// <param name="filename">The file name of this Motion source code.</param>
-    /// <param name="source">The Motion source code contents.</param>
-    public CompilerSource(string? filename, string source)
+    /// <inheritdoc/>
+    public void Dispose()
     {
-        Filename = filename;
-        Source = source;
+        Source?.Dispose();
+    }
+
+    public static CompilerSource FromCode(string code)
+    {
+        return new CompilerSource() { Source = new StringReader(code) };
+    }
+
+    public static CompilerSource FromCode(string code, string? fileName)
+    {
+        return new CompilerSource() { Source = new StringReader(code), Filename = fileName };
+    }
+
+    public static CompilerSource FromFile(string fileName, Encoding? encoding = null)
+    {
+        return new CompilerSource() { Source = new StreamReader(fileName, encoding ?? Encoding.UTF8), Filename = fileName };
+    }
+
+    public static CompilerSource FromStream(Stream s, string? fileName = null, Encoding? encoding = null)
+    {
+        return new CompilerSource() { Source = new StreamReader(s, encoding ?? Encoding.UTF8), Filename = fileName };
     }
 }

@@ -346,27 +346,30 @@ public class ExecutionContext
         return this;
     }
 
+    /// <summary>
+    /// Reads and executes additional code in the current execution context, using the compilation
+    /// options that resulted in this instance of <see cref="ExecutionContext"/>.
+    /// </summary>
+    /// <param name="additionalCode">The additional code to evaluate.</param>
     public object? Run(string additionalCode)
     {
-        List<object?> results = new List<object?>();
+        var tokenizer = new Tokenizer(CompilerSource.FromCode(additionalCode), compilerResult.Options);
+        tokenizer.Read();
 
-        var atoms = new Tokenizer(additionalCode, null, compilerResult.Options)
-            .Tokenize()
-            .ToArray();
-
-        for (int i = 0; i < atoms.Length; i++)
+        var result = tokenizer.Result;
+        for (int i = 0; i < result.Length; i++)
         {
-            if (i == atoms.Length - 1)
+            if (i == result.Length - 1)
             {
-                return EvaluateTokenItem(atoms[i], AtomBase.Undefined);
+                return EvaluateTokenItem(result[i], AtomBase.Undefined);
             }
             else
             {
-                EvaluateTokenItem(atoms[i], AtomBase.Undefined);
+                EvaluateTokenItem(result[i], AtomBase.Undefined);
             }
         }
 
-        return results.ToArray();
+        return null;
     }
 
     /// <summary>

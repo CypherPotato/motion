@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Motion.Parser;
+using Motion.Parser.V2;
 using Motion.Runtime;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
@@ -25,7 +26,7 @@ public class MotionException : Exception
     /// <summary>
     /// Gets the character position of the current position in the snapshot.
     /// </summary>
-    public int Position { get => snapshot.Position; }
+    public int Position { get => snapshot.Index; }
 
     /// <summary>
     /// Gets the column number of the current position in the snapshot.
@@ -35,22 +36,12 @@ public class MotionException : Exception
     /// <summary>
     /// Gets the length of the text at the current position in the snapshot.
     /// </summary>
-    public int Length { get => Math.Min(snapshot.Length, LineText.Length); }
-
-    /// <summary>
-    /// Gets the text of the line containing the current position in the snapshot.
-    /// </summary>
-    public string LineText { get => snapshot.LineText; }
+    public int Length { get => snapshot.Length; }
 
     /// <summary>
     /// Gets the file which raised the exception.
     /// </summary>
     public string? Filename { get => snapshot.Filename; }
-
-    internal MotionException(string message, TextInterpreter i) : base(message)
-    {
-        snapshot = i.TakeSnapshot(1);
-    }
 
     internal MotionException(string message, TextInterpreterSnapshot i, Exception? innerException) : base(message, innerException)
     {
@@ -68,38 +59,11 @@ public class MotionException : Exception
     }
 
     /// <summary>
-    /// Builds an pretty, well formated exception message for the specified <see cref="MotionException"/>.
+    /// Write a colorful, well-formatted message for an error message.
     /// </summary>
-    /// <param name="error">The <see cref="MotionException"/> error.</param>
-    /// <returns></returns>
-    public static string BuildErrorMessage(MotionException error)
-    {
-        StringBuilder sb = new StringBuilder();
-        if (error.Filename is null)
-        {
-            sb.AppendLine($"error at line {error.Line}, col {error.Column}:");
-        }
-        else
-        {
-            sb.AppendLine($"error at file {error.Filename}, line {error.Line}, col {error.Column}:");
-        }
-
-        sb.AppendLine("     | ");
-        sb.Append($"{error.Line,4} | ");
-        sb.AppendLine(error.LineText);
-        sb.Append("     | ");
-        sb.AppendLine(new string(' ', Math.Max(0, error.Column - 1)) + new string('-', error.Length));
-
-        foreach (string line in error.Message.Split('\n'))
-        {
-            sb.Append("     : ");
-            sb.AppendLine(new string(' ', Math.Max(0, error.Column - 1)) + line.TrimStart());
-        }
-
-        return sb.ToString();
-    }
-
-    public static void DumpErrorMessage(MotionException error)
+    /// <param name="sourceCode">The source code where this message originated.</param>
+    /// <param name="error">The error object.</param>
+    public static void DumpErrorMessage(string? sourceCode, MotionException error)
     {
         void Print(ConsoleColor color, object? message)
         {
@@ -116,31 +80,42 @@ public class MotionException : Exception
         Print(ConsoleColor.Blue, error.Column);
         Console.WriteLine(":");
 
-        Print(ConsoleColor.Blue, $"{' ',4} | ");
-        Console.WriteLine();
-
-        string before = error.LineText.Substring(0, error.Column - 1);
-        string current = error.LineText.Substring(error.Column - 1, error.Length);
-        string after = error.LineText.Substring(error.Column - 1 + error.Length);
-
-        Print(ConsoleColor.Blue, $"{error.Line,4} | ");
-        Console.Write(before);
-        Print(ConsoleColor.Red, current);
-        Console.Write(after);
-        Console.WriteLine();
-        Print(ConsoleColor.Blue, $"{' ',4} | ");
-        Print(ConsoleColor.Red, new string(' ', error.Column - 1));
-        Print(ConsoleColor.DarkRed, new string('-', error.Length));
-        Console.WriteLine();
-
-        foreach (string line in error.Message.Split('\n'))
+        if (sourceCode is null)
         {
-            Print(ConsoleColor.DarkBlue, $"{' ',4} : ");
-            Console.Write(new string(' ', error.Column - 1));
-            Print(ConsoleColor.Red, line);
+            Print(ConsoleColor.Red, error.Message);
             Console.WriteLine();
         }
-        Print(ConsoleColor.DarkBlue, $"{' ',4} : \n");
+        else
+        {
+            Print(ConsoleColor.Blue, $"{' ',4} | ");
+            Console.WriteLine();
+
+            string[] lines = sourceCode.Split('\n', error.Line + 1);
+            string lineText = lines[error.Line - 1];
+
+            string before = lineText.Substring(0, error.Column - 1);
+            string current = lineText.Substring(error.Column - 1, error.Length);
+            string after = lineText.Substring(error.Column - 1 + error.Length);
+
+            Print(ConsoleColor.Blue, $"{error.Line,4} | ");
+            Console.Write(before);
+            Print(ConsoleColor.Red, current);
+            Console.Write(after);
+            Console.WriteLine();
+            Print(ConsoleColor.Blue, $"{' ',4} | ");
+            Print(ConsoleColor.Red, new string(' ', error.Column - 1));
+            Print(ConsoleColor.DarkRed, new string('-', error.Length));
+            Console.WriteLine();
+
+            foreach (string line in error.Message.Split('\n'))
+            {
+                Print(ConsoleColor.DarkBlue, $"{' ',4} : ");
+                Console.Write(new string(' ', error.Column - 1));
+                Print(ConsoleColor.Red, line);
+                Console.WriteLine();
+            }
+            Print(ConsoleColor.DarkBlue, $"{' ',4} : \n");
+        }
     }
 }
 

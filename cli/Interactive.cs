@@ -11,7 +11,6 @@ using static MotionCLI.Program;
 using Motion.Compilation;
 using Motion.Runtime;
 using System.Reflection;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace MotionCLI;
 
@@ -19,6 +18,7 @@ internal static class Interactive
 {
     public static async Task Init()
     {
+        Dictionary<string, string> fileInputs = new Dictionary<string, string>();
         Console.WriteLine($"Motion Messaging Client [Cli. {Program.ClientVersionString}/Lang. {Motion.Compiler.MotionVersion}]");
         Console.WriteLine("To get help, type /help.\n");
 
@@ -79,13 +79,19 @@ internal static class Interactive
                     Console.WriteLine($"error: the specified importing file {file} couldn't be found.");
                     break;
                 }
-                sources.Add(new CompilerSource(fpath, File.ReadAllText(fpath)));
+
+                string code = File.ReadAllText(file);
+
+                fileInputs.Add(file, code);
+                sources.Add(CompilerSource.FromCode(code, file));
             }
 
             var compilerResult = Compiler.Compile(sources, options);
             if (!compilerResult.Success)
             {
-                DumpError(compilerResult.Error!);
+                var error = compilerResult.Error!;
+                string? fromFile = error.Filename is null ? null : fileInputs[error.Filename];
+                DumpError(fromFile, error);
                 return;
             }
 
@@ -98,7 +104,13 @@ internal static class Interactive
             }
             catch (Exception ex)
             {
-                DumpError(ex);
+                string? fileText = null;
+                if (ex is MotionException mex)
+                {
+                    fileText = mex.Filename is null ? null : fileInputs[mex.Filename];
+                }
+                DumpError(fileText, ex);
+
                 return;
             }
         }
@@ -180,16 +192,16 @@ internal static class Interactive
             }
             catch (Exception ex)
             {
-                DumpError(ex);
+                DumpError(data, ex);
             }
         }
     }
 
-    static void DumpError(Exception ex)
+    static void DumpError(string? code, Exception ex)
     {
         if (ex is MotionException error)
         {
-            MotionException.DumpErrorMessage(error);
+            MotionException.DumpErrorMessage(code, error);
             Console.WriteLine();
         }
         else

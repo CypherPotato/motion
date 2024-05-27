@@ -43,6 +43,9 @@ public class SyntaxItem
     /// </summary>
     public int Length { get; }
 
+    /// <summary>
+    /// Gets the item current expression depth.
+    /// </summary>
     public int ExpressionDepth { get; }
 
     internal SyntaxItem(string contents, SyntaxItemType type, int depth, TextInterpreterSnapshot snapshot)
@@ -51,12 +54,15 @@ public class SyntaxItem
         Type = type;
         Line = snapshot.Line;
         Column = snapshot.Column;
-        Position = snapshot.Position;
+        Position = snapshot.Index;
         Length = snapshot.Length;
         ExpressionDepth = depth;
     }
 }
 
+/// <summary>
+/// Represents the type of the <see cref="SyntaxItem"/> object.
+/// </summary>
 public enum SyntaxItemType
 {
     /// <summary>
@@ -104,5 +110,13 @@ public enum SyntaxItemType
     /// </summary>
     Operator,
 
-    Comment
+    /// <summary>
+    /// Represents an comment.
+    /// </summary>
+    Comment,
+
+    /// <summary>
+    /// Represents an unrecognized token.
+    /// </summary>
+    Unknown
 }

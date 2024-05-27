@@ -22,7 +22,7 @@ public class AtomicInformation<TValue>
     /// <summary>
     /// Gets the character position of the current position in the snapshot.
     /// </summary>
-    public int Position { get => snapshot.Position; }
+    public int Position { get => snapshot.Index; }
 
     /// <summary>
     /// Gets the column number of the current position in the snapshot.
@@ -32,12 +32,7 @@ public class AtomicInformation<TValue>
     /// <summary>
     /// Gets the length of the text at the current position in the snapshot.
     /// </summary>
-    public int Length { get => Math.Min(snapshot.Length, LineText.Length); }
-
-    /// <summary>
-    /// Gets the text of the line containing the current position in the snapshot.
-    /// </summary>
-    public string LineText { get => snapshot.LineText; }
+    public int Length { get => snapshot.Length; }
 
     /// <summary>
     /// Gets the file where this value was defined.

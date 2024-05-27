@@ -8,9 +8,12 @@ namespace Motion.Parser;
 
 struct AtomBase
 {
-    public static readonly char Ch_ExpressionStart = '(';
-    public static readonly char Ch_ExpressionEnd = ')';
-    public static readonly char Ch_StringQuote = '"';
+    public const char Ch_ExpressionStart = '(';
+    public const char Ch_ExpressionEnd = ')';
+    public const char Ch_StringQuote = '"';
+    public const char Ch_StringVerbatin = '^';
+    public const char Ch_StringEscape = '\\';
+    public const char Ch_CommentChar = ';';
 
     public static readonly char[] AllowedFirstSymbolChars = new char[] {
         '%', '$'
