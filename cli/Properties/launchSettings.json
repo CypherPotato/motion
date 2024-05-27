@@ -2,7 +2,7 @@
   "profiles": {
     "MotionCLI": {
       "commandName": "Project",
-      "commandLineArgs": "-f code.lisp\r\n-r \"C:\\Code\\repos\\GroqLib\\bin\\Debug\\net8.0\\GroqLib.dll\"\r\n-r \"C:\\Code\\repos\\LightJsonMotionLib\\bin\\Debug\\net7.0\\LightJsonMotionLib.dll\""
+      "commandLineArgs": "-f code.lisp\r\n-f vec.lisp\r\n-r \"C:\\Code\\repos\\GroqLib\\bin\\Debug\\net8.0\\GroqLib.dll\"\r\n-r \"C:\\Code\\repos\\LightJsonMotionLib\\bin\\Debug\\net7.0\\LightJsonMotionLib.dll\""
     }
   }
 }

@@ -30,11 +30,17 @@ public sealed class MotionUserFunction
     /// </summary>
     public string? Documentation { get; }
 
-    internal MotionUserFunction(string[] arguments, string? documentation, AtomBase body)
+    /// <summary>
+    /// Gets whether this method should evaluate arguments or invoke them as atoms.
+    /// </summary>
+    public bool EvaluateArguments { get; }
+
+    internal MotionUserFunction(string[] arguments, string? documentation, AtomBase body, bool evaluateArguments)
     {
         Arguments = arguments;
         Documentation = documentation;
         this.body = body;
+        EvaluateArguments = evaluateArguments;
     }
 
     internal object? Invoke(AtomBase callingExpression, ExecutionContext context)

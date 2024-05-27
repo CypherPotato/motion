@@ -93,9 +93,11 @@ public class MotionException : Exception
             string[] lines = sourceCode.Split('\n', error.Line + 1);
             string lineText = lines[error.Line - 1];
 
-            string before = lineText.Substring(0, error.Column - 1);
-            string current = lineText.Substring(error.Column - 1, error.Length);
-            string after = lineText.Substring(error.Column - 1 + error.Length);
+            int icol = Math.Max(0, Math.Min(error.Column - 1, lineText.Length - 1));
+
+            string before = lineText.Substring(0, icol);
+            string current = lineText.Substring(icol, error.Length);
+            string after = lineText.Substring(icol + error.Length);
 
             Print(ConsoleColor.Blue, $"{error.Line,4} | ");
             Console.Write(before);

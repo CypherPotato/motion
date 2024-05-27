@@ -20,10 +20,10 @@ internal class ComArray : IMotionLibrary
 
     object? MakeObject(Atom self)
     {
-        ExpandoObject obj = new ExpandoObject();
+        var obj = new MotionObject();
         foreach(string word in self.Keywords)
         {
-            obj.TryAdd(word, self.GetAtom(word).Nullable()?.GetObject());
+            obj.Add(word, self.GetAtom(word).Nullable()?.GetObject());
         }
         return obj;
     }

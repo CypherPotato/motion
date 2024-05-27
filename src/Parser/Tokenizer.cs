@@ -49,11 +49,95 @@ class Tokenizer : IDisposable
                     break;
 
                 default:
-                    throw interpreter.ExceptionManager.UnexpectedToken(p.ToString());
+                    if (options.Features.HasFlag(CompilerFeature.AllowParenthesislessCode))
+                    {
+                        atoms.Add(ReadParenthesislessExpression());
+                    }
+                    else
+                    {
+                        throw interpreter.ExceptionManager.UnexpectedToken(p.ToString());
+                    }
+                    break;
             }
 
             interpreter.SkipWhitespace();
         }
+    }
+
+    AtomBase ReadParenthesislessExpression()
+    {
+        List<AtomBase> child = new List<AtomBase>();
+        List<string> keywords = new List<string>();
+        string? lastKeyword = null;
+
+        var expStart = interpreter.GetSnapshot(0);
+
+        string? TakeKeyword()
+        {
+            try
+            {
+                return lastKeyword;
+            }
+            finally
+            {
+                lastKeyword = null;
+            }
+        }
+
+        while (interpreter.CanRead)
+        {
+            interpreter.SkipWhitespace();
+            var peek = interpreter.Peek();
+
+            switch (peek)
+            {
+                case AtomBase.Ch_CommentChar:
+                    interpreter.SkipComment();
+                    break;
+
+                case AtomBase.Ch_ExpressionEnd:
+                    throw interpreter.ExceptionManager.UnexpectedToken(AtomBase.Ch_ExpressionEnd.ToString());
+
+                case AtomBase.Ch_ExpressionStart:
+
+                    AtomBase subExp = ReadExpression();
+                    subExp.Keyword = TakeKeyword();
+
+                    child.Add(subExp);
+                    break;
+
+                case AtomBase.Ch_StringQuote:
+                case AtomBase.Ch_StringVerbatin:
+
+                    AtomBase at = ReadString();
+                    at.Keyword = TakeKeyword();
+
+                    child.Add(at);
+                    break;
+
+                default:
+
+                    AtomBase c = ReadCarry(true);
+                    if (c.Type == TokenType.Keyword)
+                    {
+                        lastKeyword = c.Content?.ToString();
+                        keywords.Add(lastKeyword!);
+                    }
+                    else
+                    {
+                        c.Keyword = TakeKeyword();
+                        child.Add(c);
+                    }
+
+                    break;
+            }
+        }
+
+        return new AtomBase(expStart, TokenType.Expression)
+        {
+            SingleKeywords = keywords.ToArray(),
+            Children = child.ToArray()
+        };
     }
 
     AtomBase ReadExpression()
@@ -122,10 +206,12 @@ class Tokenizer : IDisposable
 
                 default:
 
-                    AtomBase c = ReadCarry();
+                    AtomBase c = ReadCarry(false);
+
                     if (c.Type == TokenType.Keyword)
                     {
                         lastKeyword = c.Content?.ToString();
+                        keywords.Add(lastKeyword!);
                     }
                     else
                     {
@@ -186,7 +272,7 @@ class Tokenizer : IDisposable
         throw interpreter.ExceptionManager.ExpectToken(AtomBase.Ch_StringQuote.ToString());
     }
 
-    AtomBase ReadCarry()
+    AtomBase ReadCarry(bool isOnParenthesislessContext)
     {
         StringBuilder sb = new StringBuilder();
         bool fullyRead = false;
@@ -215,13 +301,13 @@ class Tokenizer : IDisposable
             }
         }
 
-        if (!fullyRead)
+        string content = sb.ToString();
+        snapshot.Length = content.Length;
+
+        if (!fullyRead && !isOnParenthesislessContext)
         {
             throw interpreter.ExceptionManager.ExpectToken(AtomBase.Ch_ExpressionEnd.ToString());
         }
-
-        string content = sb.ToString();
-        snapshot.Length = content.Length;
 
         if (content == "="
          || content == "/="

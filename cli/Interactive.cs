@@ -192,7 +192,13 @@ internal static class Interactive
             }
             catch (Exception ex)
             {
-                DumpError(data, ex);
+                string? fileText = null;
+                if (ex is MotionException mex)
+                {
+                    fileText = mex.Filename is null ? data : fileInputs[mex.Filename];
+                }
+
+                DumpError(fileText, ex);
             }
         }
     }
