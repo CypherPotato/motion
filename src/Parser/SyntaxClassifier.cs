@@ -64,6 +64,21 @@ public sealed class SyntaxClassifier : IDisposable
                     items.Add(ReadString());
                     break;
 
+                case AtomBase.Ch_RawStringId:
+
+                    var start = interpreter.GetSnapshot(1);
+                    interpreter.Read();
+                    if (interpreter.Peek() == AtomBase.Ch_StringQuote)
+                    {
+                        items.Add(ReadRawStringLiteral(ref start));
+                    }
+                    else
+                    {
+                        goto default;
+                    }
+
+                    break;
+
                 case AtomBase.Ch_CommentChar:
                     ReadSkipComment();
                     break;
@@ -107,6 +122,52 @@ public sealed class SyntaxClassifier : IDisposable
         }
     }
 
+    SyntaxItem ReadRawStringLiteral(ref TextInterpreterSnapshot start)
+    {
+        StringBuilder sb = new StringBuilder();
+
+        int mkSize = 0,
+            carryEndSize = 0;
+
+        while (interpreter.CanRead && interpreter.Peek() == AtomBase.Ch_StringQuote)
+        {
+            mkSize++;
+            interpreter.Read();
+        }
+
+        if (mkSize == 0)
+        {
+            throw interpreter.ExceptionManager.ExpectToken(AtomBase.Ch_StringQuote.ToString());
+        }
+
+        while (interpreter.CanRead)
+        {
+            var r = interpreter.Read();
+
+            if (r == AtomBase.Ch_StringQuote)
+            {
+                carryEndSize++;
+                if (mkSize == carryEndSize)
+                {
+                    break;
+                }
+            }
+            else
+            {
+                if (carryEndSize > 0)
+                {
+                    sb.Append(new string(AtomBase.Ch_StringQuote, carryEndSize));
+                    carryEndSize = 0;
+                }
+
+                sb.Append(r);
+            }
+        }
+
+        start.Length = interpreter.Position.index - start.Index;
+        return new SyntaxItem(sb.ToString(), SyntaxItemType.RawStringLiteral, expressionDepth, start);
+    }
+
     SyntaxItem ReadString()
     {
         StringBuilder sb = new StringBuilder();
@@ -114,10 +175,19 @@ public sealed class SyntaxClassifier : IDisposable
 
         if (interpreter.Peek() == AtomBase.Ch_StringVerbatin)
         {
-            sb.Append(interpreter.Read());
+            if (interpreter.CanRead)
+                sb.Append(interpreter.Read());
         }
 
-        sb.Append(interpreter.Read());
+        if (interpreter.CanRead && interpreter.Read() == AtomBase.Ch_StringQuote)
+        {
+            ;
+        }
+        else
+        {
+            return new SyntaxItem("", SyntaxItemType.Unknown, expressionDepth, start);
+        }
+
         while (interpreter.CanRead)
         {
             var peek = interpreter.Peek();
@@ -152,7 +222,8 @@ public sealed class SyntaxClassifier : IDisposable
         StringBuilder sb = new StringBuilder();
 
         var snapshot = interpreter.GetSnapshot(1);
-        sb.Append(interpreter.Read());
+        if (interpreter.CanRead)
+            sb.Append(interpreter.Read());
 
         while (interpreter.CanRead)
         {

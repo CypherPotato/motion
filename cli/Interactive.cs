@@ -49,7 +49,7 @@ internal static class Interactive
             persistentHistoryFilepath: "./history-file",
             callbacks: motionPromptCallback,
             configuration: new PromptConfiguration(
-                prompt: new FormattedString(Environment.UserName + "> "),
+                prompt: new FormattedString(Environment.UserName + " -> "),
                 selectedCompletionItemBackground: AnsiColor.Rgb(30, 30, 30),
                 selectedTextBackground: AnsiColor.Rgb(20, 61, 102)));
 
@@ -63,7 +63,12 @@ internal static class Interactive
                 | CompilerFeature.TraceUserFunctionsCalls
                 | CompilerFeature.TraceUserFunctionsVariables,
 
-            Libraries = references
+            Libraries = references,
+
+            EnumExports = new EnumExport[]
+            {
+                EnumExport.Create<DayOfWeek>("day")
+            }
         };
 
         Motion.Runtime.ExecutionContext context;
@@ -118,6 +123,8 @@ internal static class Interactive
         {
             context = Compiler.CreateEmptyContext(options);
         }
+
+        context.Variables.Set("$last-result", null);
 
         // get auto complete items
         foreach (AtomicInformation<object?> variable in context.Variables)
@@ -181,6 +188,7 @@ internal static class Interactive
                 var result = context.Run(data);
                 sw.Stop();
 
+                context.Variables.Set("$last-result", result);
                 Console.WriteLine(result?.ToString()?.ReplaceLineEndings());
 
                 if (Program.Verbose)

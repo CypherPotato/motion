@@ -106,6 +106,23 @@ class Tokenizer : IDisposable
                     child.Add(subExp);
                     break;
 
+                case AtomBase.Ch_RawStringId:
+
+                    interpreter.Read();
+                    if (interpreter.Peek() == AtomBase.Ch_StringQuote)
+                    {
+                        AtomBase sltr = ReadRawStringLiteral();
+                        sltr.Keyword = TakeKeyword();
+
+                        child.Add(sltr);
+                    }
+                    else
+                    {
+                        goto default;
+                    }
+
+                    break;
+
                 case AtomBase.Ch_StringQuote:
                 case AtomBase.Ch_StringVerbatin:
 
@@ -197,6 +214,23 @@ class Tokenizer : IDisposable
                     child.Add(subExp);
                     break;
 
+                case AtomBase.Ch_RawStringId:
+
+                    interpreter.Read();
+                    if (interpreter.Peek() == AtomBase.Ch_StringQuote)
+                    {
+                        AtomBase sltr = ReadRawStringLiteral();
+                        sltr.Keyword = TakeKeyword();
+
+                        child.Add(sltr);
+                    }
+                    else
+                    {
+                        goto default;
+                    }
+
+                    break;
+
                 case AtomBase.Ch_StringQuote:
                 case AtomBase.Ch_StringVerbatin:
 
@@ -228,6 +262,56 @@ class Tokenizer : IDisposable
         }
 
         throw interpreter.ExceptionManager.ExpectToken(AtomBase.Ch_ExpressionEnd.ToString());
+    }
+
+    AtomBase ReadRawStringLiteral()
+    {
+        StringBuilder sb = new StringBuilder();
+
+        var start = interpreter.GetSnapshot(1);
+        int mkSize = 0,
+            carryEndSize = 0;
+
+        while (interpreter.CanRead && interpreter.Peek() == AtomBase.Ch_StringQuote)
+        {
+            mkSize++;
+            interpreter.Read();
+        }
+
+        if (mkSize == 0)
+        {
+            throw interpreter.ExceptionManager.ExpectToken(AtomBase.Ch_StringQuote.ToString());
+        }
+
+        while (interpreter.CanRead)
+        {
+            var r = interpreter.Read();
+
+            if (r == AtomBase.Ch_StringQuote)
+            {
+                carryEndSize++;
+                if (mkSize == carryEndSize)
+                {
+                    start.Length = interpreter.Position.index - start.Index;
+                    return new AtomBase(start, TokenType.String)
+                    {
+                        Content = sb.ToString()
+                    };
+                }
+            }
+            else
+            {
+                if (carryEndSize > 0)
+                {
+                    sb.Append(new string(AtomBase.Ch_StringQuote, carryEndSize));
+                    carryEndSize = 0;
+                }
+
+                sb.Append(r);
+            }
+        }
+
+        throw interpreter.ExceptionManager.ExpectToken(AtomBase.Ch_StringQuote.ToString());
     }
 
     AtomBase ReadString()

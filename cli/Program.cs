@@ -181,11 +181,15 @@ internal class Program
                 ConsoleFormat format;
                 TextSpan textSpan = new TextSpan(item.Position, item.Length);
 
-                if (item.Type is SyntaxItemType.BooleanLiteral or SyntaxItemType.Operator or SyntaxItemType.NullWord)
+                if (item.Type is SyntaxItemType.BooleanLiteral
+                              or SyntaxItemType.Operator
+                              or SyntaxItemType.NullWord)
                 {
                     format = Theme.WordLiteral;
                 }
-                else if (item.Type is SyntaxItemType.StringLiteral)
+                else if (item.Type is SyntaxItemType.StringLiteral
+                                   or SyntaxItemType.CharacterLiteral
+                                   or SyntaxItemType.RawStringLiteral)
                 {
                     format = Theme.StringLiteral;
                 }

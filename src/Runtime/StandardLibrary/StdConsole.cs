@@ -12,6 +12,9 @@ internal class StdConsole : IMotionLibrary
 
     public void ApplyMembers(ExecutionContext context)
     {
+        context.Aliases.Add("print", "console:write");
+        context.Aliases.Add("println", "console:write-line");
+
         context.Methods.Add("write", Write);
         context.Methods.Add("write-line", WriteLine);
     }

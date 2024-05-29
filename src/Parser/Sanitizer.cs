@@ -88,6 +88,12 @@ class Sanitizer
             case "return":
                 return '\r';
 
+            case "semicolon":
+                return ';';
+
+            case "nil":
+                return '\0';
+
             default:
                 if (content.Length == 1)
                 {

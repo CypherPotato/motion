@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Motion.Parser.V2;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -12,6 +13,7 @@ struct AtomBase
     public const char Ch_ExpressionStart = '(';
     public const char Ch_ExpressionEnd = ')';
     public const char Ch_StringQuote = '"';
+    public const char Ch_RawStringId = '#';
     public const char Ch_StringVerbatin = '^';
     public const char Ch_StringEscape = '\\';
     public const char Ch_CharacterLiteral = '\\';
@@ -84,7 +86,7 @@ struct AtomBase
         }
         for (int i = 1; i < content.Length; i++)
         {
-            if (!char.IsLetterOrDigit(content[i]))
+            if (TextInterpreter.IsWhiteSpace(content[i]))
                 return false;
         }
 

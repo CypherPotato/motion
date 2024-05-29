@@ -76,6 +76,11 @@ public enum SyntaxItemType
     StringLiteral,
 
     /// <summary>
+    /// Represents an raw-string literal.
+    /// </summary>
+    RawStringLiteral,
+
+    /// <summary>
     /// Represents an character literal.
     /// </summary>
     CharacterLiteral,
