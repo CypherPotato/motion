@@ -131,6 +131,8 @@ class Tokenizer : IDisposable
 
                     break;
             }
+
+            interpreter.SkipWhitespace();
         }
 
         return new AtomBase(expStart, TokenType.Expression)
@@ -221,6 +223,8 @@ class Tokenizer : IDisposable
 
                     break;
             }
+
+            interpreter.SkipWhitespace();
         }
 
         throw interpreter.ExceptionManager.ExpectToken(AtomBase.Ch_ExpressionEnd.ToString());
@@ -345,6 +349,13 @@ class Tokenizer : IDisposable
             return new AtomBase(snapshot, TokenType.Null)
             {
                 Content = null
+            };
+        }
+        else if (AtomBase.IsCharacterToken(content))
+        {
+            return new AtomBase(snapshot, TokenType.Character)
+            {
+                Content = Sanitizer.SanitizeCharacterLiteral(content)
             };
         }
         else if (AtomBase.IsSymbolToken(content))

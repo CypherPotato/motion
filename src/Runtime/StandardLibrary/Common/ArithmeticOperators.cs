@@ -15,7 +15,15 @@ internal class ArithmeticOperators : IMotionLibrary
         context.Methods.Add("-", Sub);
         context.Methods.Add("*", Mult);
         context.Methods.Add("/", Div);
+
+        context.Methods.Add("hex", Hex);
+        context.Methods.Add("oct", Oct);
+        context.Methods.Add("bin", Bin);
     }
+
+    public int Hex(string num) => Convert.ToInt32(num, 16);
+    public int Oct(string num) => Convert.ToInt32(num, 8);
+    public int Bin(string num) => Convert.ToInt32(num, 2);
 
     dynamic Sum(params dynamic[] nums)
     {

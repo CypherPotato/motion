@@ -19,7 +19,7 @@ public delegate object? MotionMethod(Atom atom);
 public sealed class MotionUserFunction
 {
     private AtomBase body;
-    
+
     /// <summary>
     /// Gets an ordered array of arguments names of this Motion function.
     /// </summary>
@@ -58,13 +58,46 @@ public sealed class MotionUserFunction
             throw new MotionException($"too many arguments for the method \"{firstChild.Content}\".\nthis method only expects {Arguments.Length} parameters, but got {atomCount} instead.", firstChild.Location, null);
         }
 
-        for (int i = 0; i < Arguments.Length; i++)
+        if (EvaluateArguments)
         {
-            string key = Arguments[i];
-            object? value = context.EvaluateTokenItem(callingExpression.Children[i + 1], callingExpression);
-            context.CallingParameters.InternalSet(callingExpression.Location, key, value);
-        }
+            for (int i = 0; i < Arguments.Length; i++)
+            {
+                string key = Arguments[i];
+                object? value = context.EvaluateTokenItem(callingExpression.Children[i + 1], callingExpression);
+                context.CallingParameters.InternalSet(callingExpression.Location, key, value);
+            }
 
-        return context.EvaluateTokenItem(body, AtomBase.Undefined);
+            return context.EvaluateTokenItem(body, AtomBase.Undefined);
+        }
+        else
+        {
+            void ReplAtomValue(ref AtomBase item, string name, in AtomBase newValue)
+            {
+                for (int i = 0; i < item.Children.Length; i++)
+                {
+                    ref AtomBase child = ref item.Children[i];
+                    if (child.Type == TokenType.Symbol && string.Compare(child.Content?.ToString(), name, true) == 0)
+                    {
+                        string? k = child.Keyword;
+                        child = newValue;
+                        child.Keyword = k;
+                    }
+                    else if (child.Type == TokenType.Expression)
+                    {
+                        ReplAtomValue(ref child, name, newValue);
+                    }
+                }
+            }
+
+            AtomBase copy = body.Clone();
+            for (int i = 0; i < Arguments.Length; i++)
+            {
+                string key = Arguments[i];
+                ref AtomBase value = ref callingExpression.Children[i + 1];
+                ReplAtomValue(ref copy, key, in value);
+            }
+
+            return context.EvaluateTokenItem(copy, AtomBase.Undefined);
+        }
     }
 }

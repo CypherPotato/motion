@@ -2,6 +2,7 @@
 using Motion.Runtime;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -43,6 +44,8 @@ public sealed class CompilationResult
     /// </summary>
     /// <returns>An execution context that can be used to execute the compiled code.</returns>
     /// <exception cref="MotionException">Thrown if the compilation was not successful.</exception>
+    [UnconditionalSuppressMessage("AOT", "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.",
+        Justification = "Whe using AOT compilation, the user should use EnumExport.Create instead it's constructor.")]
     public Runtime.ExecutionContext CreateContext()
     {
         if (!Success) throw Error!;
@@ -53,6 +56,7 @@ public sealed class CompilationResult
         context.ImportLibrary(new Runtime.StandardLibrary.StdMath());
         context.ImportLibrary(new Runtime.StandardLibrary.StdRandom());
         context.ImportLibrary(new Runtime.StandardLibrary.StdCType());
+        context.ImportLibrary(new Runtime.StandardLibrary.StdAtoms());
 
         if (Options.Features.HasFlag(CompilerFeature.EnableConsoleMethods))
             context.ImportLibrary(new Runtime.StandardLibrary.StdConsole());
@@ -60,6 +64,21 @@ public sealed class CompilationResult
         foreach (IMotionLibrary lib in Options.Libraries)
         {
             context.ImportLibrary(lib);
+        }
+
+        foreach (EnumExport export in Options.EnumExports)
+        {
+            var names = Enum.GetNames(export.ExportType);
+            var values = Enum.GetValues(export.ExportType);
+
+            for (int i = 0; i < names.Length; i++)
+            {
+                string n = names[i];
+                object v = values.GetValue(i)!;
+
+                string prefix = (export.Alias ?? export.ExportType.Name) + ".";
+                context.SetConstant(prefix + n, v);
+            }
         }
 
         return context;

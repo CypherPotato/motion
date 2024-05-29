@@ -69,6 +69,7 @@ public struct Atom
         {
             TokenType.Undefined or TokenType.Null => AtomType.Null,
             TokenType.String => AtomType.StringLiteral,
+            TokenType.Character => AtomType.CharacterLiteral,
             TokenType.Number => AtomType.NumberLiteral,
             TokenType.Boolean => AtomType.BooleanLiteral,
             TokenType.Expression => AtomType.Expression,
@@ -271,17 +272,13 @@ public struct Atom
     /// <exception cref="InvalidOperationException">Thrown if the atom's value is null.</exception>
     public char GetChar()
     {
-        string? b = ResolveTokenValue()?.ToString();
+        object? b = ResolveTokenValue();
         if (b == null)
         {
-            return ThrowNullObject<char>("string");
-        }
-        if (b.Length != 1)
-        {
-            throw new MotionException($"The atom expects an string of length equals to 1 (char).", GetRef().Location, null);
+            return ThrowNullObject<char>("character");
         }
         ResetTokenValue();
-        return b[0];
+        return Convert.ToChar(b);
     }
 
     /// <summary>

@@ -13,8 +13,10 @@ internal class StdString : IMotionLibrary
     public void ApplyMembers(ExecutionContext context)
     {
         context.Aliases.Add("concat", "str:concat");
+        context.Aliases.Add("sprint", "str:sprint");
         ;
         context.Methods.Add("concat", Concat);
+        context.Methods.Add("sprint", Sprint);
         context.Methods.Add("make-upper-case", MkUpperCase);
         context.Methods.Add("make-lower-case", MkLowerCase);
         context.Methods.Add("normalize", Normalize);
@@ -43,6 +45,7 @@ internal class StdString : IMotionLibrary
     }
 
     string Concat(params object?[] items) => string.Join("", items);
+    string Sprint(params object?[] items) => "- " + string.Join("\n- ", items);
     string? MkUpperCase(string? s) => s?.ToUpper();
     string? MkLowerCase(string? s) => s?.ToLower();
     string? Normalize(string? s) => s?.Normalize();

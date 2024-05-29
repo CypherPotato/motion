@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -13,6 +14,7 @@ struct AtomBase
     public const char Ch_StringQuote = '"';
     public const char Ch_StringVerbatin = '^';
     public const char Ch_StringEscape = '\\';
+    public const char Ch_CharacterLiteral = '\\';
     public const char Ch_CommentChar = ';';
 
     public static readonly char[] AllowedFirstSymbolChars = new char[] {
@@ -27,6 +29,16 @@ struct AtomBase
     public object? Content;
     public TokenType Type;
     public string? Keyword;
+
+    public AtomBase Clone() => new AtomBase()
+    {
+        Children = this.Children.ToArray(),
+        Type = this.Type,
+        Content = (object?)this.Content,
+        Keyword = new string(this.Keyword),
+        Location = this.Location,
+        SingleKeywords = this.SingleKeywords.ToArray()
+    };
 
     public override string ToString()
     {
@@ -59,6 +71,24 @@ struct AtomBase
         SingleKeywords = Array.Empty<string>();
         Content = null;
         Location = location;
+    }
+
+    public static bool IsCharacterToken(string content)
+    {
+        if (content.Length < 2) return false;
+        char firstChar = content[0];
+
+        if (firstChar != Ch_CharacterLiteral)
+        {
+            return false;
+        }
+        for (int i = 1; i < content.Length; i++)
+        {
+            if (!char.IsLetterOrDigit(content[i]))
+                return false;
+        }
+
+        return true;
     }
 
     public static bool IsKeywordToken(string content)
@@ -194,6 +224,7 @@ internal enum TokenType
     String = 10,
     Number = 11,
     Boolean = 12,
+    Character = 13,
 
     // represents an entire token group
     Expression = 40,

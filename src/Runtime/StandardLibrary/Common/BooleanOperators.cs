@@ -25,7 +25,6 @@ internal class BooleanOperators : IMotionLibrary
         context.Methods.Add("xor", Xor);
         context.Methods.Add("not", Not);
         context.Methods.Add("if", If);
-        context.Methods.Add("if-not", IfNot);
 
         context.Methods.Add("<", Lt);
         context.Methods.Add("<=", Lte);
@@ -33,6 +32,12 @@ internal class BooleanOperators : IMotionLibrary
         context.Methods.Add(">=", Gte);
 
         context.Methods.Add("zerop", Zerop);
+        context.Methods.Add("evenp", Evenp);
+        context.Methods.Add("oddp", Oddp);
+        context.Methods.Add("minusp", Minusp);
+        context.Methods.Add("plusp", Plusp);
+
+        context.Methods.Add("cond", Cond);
         context.Methods.Add("if-nil", IfNull);
         context.Methods.Add("is-nil", IsNull);
         context.Methods.Add("is-not-nil", IsNotNull);
@@ -102,6 +107,39 @@ internal class BooleanOperators : IMotionLibrary
         return a == 0;
     }
 
+    bool Evenp(dynamic a)
+    {
+        return a % 2 == 0;
+    }
+
+    bool Oddp(dynamic a)
+    {
+        return a % 2 == 0;
+    }
+
+    bool Minusp(dynamic a)
+    {
+        return a < 0;
+    }
+
+    bool Plusp(dynamic a)
+    {
+        return a > 0;
+    }
+
+    object? Cond(Atom self)
+    {
+        for (int i = 1; i < self.ItemCount; i++)
+        {
+            Atom exp = self.GetAtom(i);
+            bool cond = exp.GetAtom(0).Nullable()?.GetBoolean() == true;
+            if (cond)
+            {
+                return exp.GetAtom(1).Nullable()?.GetObject();
+            }
+        }
+        return null;
+    }
 
     object? IfNull(Atom self)
     {
@@ -110,7 +148,7 @@ internal class BooleanOperators : IMotionLibrary
         bool isUndefinedSym = false;
         var atz = self.GetAtom(1);
 
-        if (atz.Type == AtomType.Symbol && !atz.Context.IsSymbolDefined(atz.GetSymbol())) 
+        if (atz.Type == AtomType.Symbol && !atz.Context.IsSymbolDefined(atz.GetSymbol()))
         {
             isUndefinedSym = true;
         }
@@ -135,42 +173,14 @@ internal class BooleanOperators : IMotionLibrary
         return b is not null;
     }
 
-    object? IfNot(Atom self)
-    {
-        self.EnsureExactItemCount(3, 4);
-        bool condition = self.GetAtom(1).GetBoolean();
-        if (self.ItemCount == 3)
-        {
-            if (!condition)
-            {
-                return self.GetAtom(2).Nullable()?.GetObject();
-            }
-            else
-            {
-                return null;
-            }
-        }
-        else if (self.ItemCount == 4)
-        {
-            if (!condition)
-            {
-                return self.GetAtom(2).Nullable()?.GetObject();
-            }
-            else
-            {
-                return self.GetAtom(3).Nullable()?.GetObject();
-            }
-        }
-        else
-        {
-            return null;
-        }
-    }
-
     object? If(Atom self)
     {
         self.EnsureExactItemCount(3, 4);
         bool condition = self.GetAtom(1).GetBoolean();
+
+        if (self.HasKeyword("not"))
+            condition = !condition;
+
         if (self.ItemCount == 3)
         {
             if (condition)

@@ -425,6 +425,7 @@ public class ExecutionContext
         bool isTracingResult = false;
         object? result = null;
         Exception? exception = null;
+        TextInterpreterSnapshot expSymbolLocation = default;
 
         if (CancellationToken?.IsCancellationRequested == true)
         {
@@ -435,11 +436,11 @@ public class ExecutionContext
             switch (t.Type)
             {
                 case TokenType.String:
-                    return (string)t.Content!;
+                case TokenType.Character:
                 case TokenType.Number:
-                    return t.Content!; // can be int or double
                 case TokenType.Boolean:
-                    return (bool)t.Content!;
+                    // literal value stored into the atom contents
+                    return t.Content;
 
                 case TokenType.Null:
                 case TokenType.Undefined:
@@ -511,6 +512,7 @@ public class ExecutionContext
                                 }
                             }
 
+                            expSymbolLocation = firstChildren.Location;
                             string name = firstChildren.Content!.ToString()!;
 
                             if (TryResolveAlias(name, out string? aliasedName))
@@ -602,13 +604,33 @@ public class ExecutionContext
                 throw mex;
             }
 
+            TextInterpreterSnapshot location;
+            if (expSymbolLocation.Initialized)
+            {
+                location = expSymbolLocation;
+            }
+            else
+            {
+                location = t.Location;
+            }
+
             exception = tex;
-            throw new MotionException($"exception caught in Atom {t}:\n{tex.InnerException?.Message}", t.Location, tex);
+            throw new MotionException($"exception caught in Atom {t}:\n{tex.InnerException?.Message}", location, tex);
         }
         catch (Exception ex)
         {
+            TextInterpreterSnapshot location;
+            if (expSymbolLocation.Initialized)
+            {
+                location = expSymbolLocation;
+            }
+            else
+            {
+                location = t.Location;
+            }
+
             exception = ex;
-            throw new MotionException($"exception caught in Atom {t}:\n{ex.Message}", t.Location, ex);
+            throw new MotionException($"exception caught in Atom {t}:\n{ex.Message}", location, ex);
         }
         finally
         {

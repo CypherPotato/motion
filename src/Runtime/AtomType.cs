@@ -22,6 +22,11 @@ public enum AtomType
     StringLiteral,
 
     /// <summary>
+    /// Represents an <see cref="Atom"/> which holds an character literal on it.
+    /// </summary>
+    CharacterLiteral,
+
+    /// <summary>
     /// Represents an <see cref="Atom"/> which holds an numeric value on it.
     /// </summary>
     NumberLiteral,

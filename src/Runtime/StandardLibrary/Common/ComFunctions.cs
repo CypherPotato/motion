@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,8 +13,10 @@ internal class ComFunctions : IMotionLibrary
 
     public void ApplyMembers(ExecutionContext context)
     {
-        context.Methods.Add("defun", Defun);
+        context.Methods.Add("defun", (Atom self) => FunctionDefinition(self, true));
+        context.Methods.Add("defmacro", (Atom self) => FunctionDefinition(self, false));
         context.Methods.Add("import", Import);
+
         context.Methods.Add("get-trace", GetTrace);
         context.Methods.Add("help", GetCommands);
     }
@@ -85,7 +88,7 @@ internal class ComFunctions : IMotionLibrary
         self.Context.Global.UsingStatements.Add(name.Contents);
     }
 
-    string Defun(Atom self)
+    string FunctionDefinition(Atom self, bool isFunction)
     {
         self.EnsureMinimumItemCount(4);
         string name = self.GetAtom(1).GetSymbol();
@@ -108,10 +111,11 @@ internal class ComFunctions : IMotionLibrary
         }
         else
         {
-            throw new InvalidOperationException($"defun requires at least 3 parameters. got {self.ItemCount}.");
+            self.EnsureExactItemCount(3, 4);
+            return "";
         }
 
-        MotionUserFunction func = new MotionUserFunction(args, documentation, body._ref);
+        MotionUserFunction func = new MotionUserFunction(args, documentation, body._ref, isFunction);
         self.Context.GetScope(ExecutionContextScope.Global).UserFunctions.Add(self, name, func);
 
         return name.ToUpper();

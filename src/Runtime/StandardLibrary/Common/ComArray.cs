@@ -9,13 +9,34 @@ internal class ComArray : IMotionLibrary
 
     public void ApplyMembers(ExecutionContext context)
     {
+        context.Methods.Add("make-list", MakeList);
         context.Methods.Add("make-array", MakeArray);
         context.Methods.Add("make-object", MakeObject);
+
         context.Methods.Add("dotimes", DoTimes);
         context.Methods.Add("map", Map);
         context.Methods.Add("while", While);
-        context.Methods.Add("array-count", ArrayCount);
+        context.Methods.Add("length", Length);
         context.Methods.Add("aref", Aref);
+
+        context.Methods.Add("lpush", Lpush);
+    }
+
+    IList Lpush(IList item, object? value)
+    {
+        item.Add(value);
+        return item;
+    }
+
+    ArrayList MakeList(Atom self)
+    {
+        ArrayList arr = new ArrayList();
+        for (int i = 1; i < self.ItemCount; i++)
+        {
+            arr.Add(self.GetAtom(i).Nullable()?.GetObject());
+        }
+
+        return arr;
     }
 
     object? MakeObject(Atom self)
@@ -82,7 +103,7 @@ internal class ComArray : IMotionLibrary
         return result;
     }
 
-    int ArrayCount(ICollection objects)
+    int Length(ICollection objects)
     {
         return objects.Count;
     }

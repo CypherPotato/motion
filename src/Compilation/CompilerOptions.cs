@@ -21,4 +21,9 @@ public class CompilerOptions
     /// Gets or sets an collection of <see cref="IMotionLibrary"/> used to compile this code.
     /// </summary>
     public ICollection<IMotionLibrary> Libraries { get; set; } = new List<IMotionLibrary>();
+
+    /// <summary>
+    /// Gets or sets an collection of <see cref="EnumExport"/> used to export enum members.
+    /// </summary>
+    public ICollection<EnumExport> EnumExports { get; set; } = new List<EnumExport>();
 }

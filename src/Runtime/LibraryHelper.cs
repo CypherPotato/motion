@@ -35,7 +35,9 @@ public static class LibraryHelper
         List<object?> parameterObjects = new List<object?>();
         ParameterInfo[] arguments = methodInfo.GetParameters();
 
-        if (arguments.Length == 1 && arguments[0].ParameterType == typeof(Atom))
+        if (arguments.Length == 1
+            && arguments[0].ParameterType == typeof(Atom)
+            && string.Compare(arguments[0].Name, "self", true) == 0)
         {
             return method.DynamicInvoke(new object?[] { atom });
         }

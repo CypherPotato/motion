@@ -65,6 +65,53 @@ class Sanitizer
         return S;
     }
 
+    public static char SanitizeCharacterLiteral(string characterLiteral)
+    {
+        string content = characterLiteral.Substring(1);
+        switch (content)
+        {
+            case "newline":
+                return '\n';
+
+            case "space":
+                return ' ';
+
+            case "tab":
+                return '\t';
+
+            case "formfeed":
+                return '\f';
+
+            case "backspace":
+                return '\b';
+
+            case "return":
+                return '\r';
+
+            default:
+                if (content.Length == 1)
+                {
+                    return content[0];
+                }
+                else if (content[0] == 'u')
+                {
+                    string hex = content.Substring(1);
+                    int num = Convert.ToInt32(hex, 16);
+                    return (char)num;
+                }
+                else if (content[0] == 'o')
+                {
+                    string oct = content.Substring(1);
+                    int num = Convert.ToInt32(oct, 8);
+                    return (char)num;
+                }
+                else
+                {
+                    throw new FormatException("invalid character literal");
+                }
+        }
+    }
+
     public static string SanitizeCode(string input, out int parenthesisIndex, out SyntaxItem[] comments)
     {
         List<SyntaxItem> commentIndex = new List<SyntaxItem>();

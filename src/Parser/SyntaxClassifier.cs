@@ -59,6 +59,11 @@ public sealed class SyntaxClassifier : IDisposable
                     interpreter.Read();
                     break;
 
+                case AtomBase.Ch_StringQuote:
+                case AtomBase.Ch_StringVerbatin:
+                    items.Add(ReadString());
+                    break;
+
                 case AtomBase.Ch_CommentChar:
                     ReadSkipComment();
                     break;
@@ -100,6 +105,46 @@ public sealed class SyntaxClassifier : IDisposable
                 items.Add(new SyntaxItem(sb.ToString(), SyntaxItemType.Comment, expressionDepth, snapshot));
             }
         }
+    }
+
+    SyntaxItem ReadString()
+    {
+        StringBuilder sb = new StringBuilder();
+        var start = interpreter.GetSnapshot(1);
+
+        if (interpreter.Peek() == AtomBase.Ch_StringVerbatin)
+        {
+            sb.Append(interpreter.Read());
+        }
+
+        sb.Append(interpreter.Read());
+        while (interpreter.CanRead)
+        {
+            var peek = interpreter.Peek();
+
+            switch (peek)
+            {
+                case AtomBase.Ch_StringQuote:
+
+                    char current = interpreter.Current;
+                    interpreter.Read();
+                    sb.Append(interpreter.Current);
+
+                    if (current != AtomBase.Ch_StringEscape)
+                    {
+                        goto breakWhile;
+                    }
+                    break;
+
+                default:
+                    sb.Append(interpreter.Read());
+                    break;
+            }
+        }
+
+    breakWhile:
+        start.Length = interpreter.Position.index - start.Index;
+        return new SyntaxItem(sb.ToString(), SyntaxItemType.StringLiteral, expressionDepth, start);
     }
 
     SyntaxItem ReadCarry()
@@ -153,6 +198,10 @@ public sealed class SyntaxClassifier : IDisposable
         {
             return new SyntaxItem(content, SyntaxItemType.NullWord, expressionDepth, snapshot);
         }
+        else if (AtomBase.IsCharacterToken(content))
+        {
+            return new SyntaxItem(content, SyntaxItemType.CharacterLiteral, expressionDepth, snapshot);
+        }
         else if (AtomBase.IsSymbolToken(content))
         {
             return new SyntaxItem(content, SyntaxItemType.Symbol, expressionDepth, snapshot);
@@ -164,10 +213,6 @@ public sealed class SyntaxClassifier : IDisposable
         else if (AtomBase.IsNumberToken(content))
         {
             return new SyntaxItem(content, SyntaxItemType.NumberLiteral, expressionDepth, snapshot);
-        }
-        else if (AtomBase.IsStringToken(content))
-        {
-            return new SyntaxItem(content, SyntaxItemType.StringLiteral, expressionDepth, snapshot);
         }
         else
         {
