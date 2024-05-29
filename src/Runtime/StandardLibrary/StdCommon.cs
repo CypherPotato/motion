@@ -20,6 +20,7 @@ class StdCommon : IMotionLibrary
         context.Variables.Set("$trace", false);
         new ArithmeticOperators().ApplyMembers(context);
         new BooleanOperators().ApplyMembers(context);
+        new BitwiseOperators().ApplyMembers(context);
         new ComDeclarators().ApplyMembers(context);
         new ComArray().ApplyMembers(context);
         new ComFunctions().ApplyMembers(context);

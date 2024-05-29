@@ -59,6 +59,66 @@ public class MotionException : Exception
     }
 
     /// <summary>
+    /// Writes an well-formatted error explanation of the specified <see cref="MotionException"/>
+    /// into an string.
+    /// </summary>
+    /// <param name="sourceCode">The source code where the exception was originated.</param>
+    /// <param name="error">The exception object.</param>
+    public static string MakeErrorMessage(string? sourceCode, MotionException error)
+    {
+        StringBuilder sb = new StringBuilder();
+
+        sb.Append("at ");
+        sb.Append(error.Filename ?? "<snippet>");
+        sb.Append(", line ");
+        sb.Append(error.Line);
+        sb.Append(", col. ");
+        sb.Append(error.Column);
+        sb.AppendLine(":");
+
+        if (sourceCode is null)
+        {
+            sb.Append(error.Message);
+            sb.AppendLine();
+        }
+        else
+        {
+            sb.Append($"{' ',4} | ");
+            sb.AppendLine();
+
+            string[] lines = sourceCode.Split('\n', error.Line + 1);
+            string lineText = lines[error.Line - 1];
+
+            int icol = Math.Max(0, Math.Min(error.Column - 1, lineText.Length - 1));
+
+            string before = lineText.Substring(0, icol);
+            string current = lineText.Substring(icol, error.Length);
+            string after = lineText.Substring(icol + error.Length);
+
+            sb.Append($"{error.Line,4} | ");
+            sb.Append(before);
+            sb.Append(current);
+            sb.Append(after);
+            sb.AppendLine();
+            sb.Append($"{' ',4} | ");
+            sb.Append(new string(' ', error.Column - 1));
+            sb.Append(new string('-', error.Length));
+            sb.AppendLine();
+
+            foreach (string line in error.Message.Split('\n'))
+            {
+                sb.Append($"{' ',4} : ");
+                sb.Append(new string(' ', error.Column - 1));
+                sb.Append(line);
+                sb.AppendLine();
+            }
+            sb.Append($"{' ',4} : \n");
+        }
+
+        return sb.ToString();
+    }
+
+    /// <summary>
     /// Write a colorful, well-formatted message for an error message.
     /// </summary>
     /// <param name="sourceCode">The source code where this message originated.</param>

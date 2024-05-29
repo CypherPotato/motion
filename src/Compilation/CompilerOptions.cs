@@ -18,6 +18,11 @@ public class CompilerOptions
     public CompilerFeature Features { get; set; }
 
     /// <summary>
+    /// Gets or sets the default enabled standard libraries to the Motion compiler.
+    /// </summary>
+    public CompilerStandardLibrary StandardLibraries { get; set; }
+
+    /// <summary>
     /// Gets or sets an collection of <see cref="IMotionLibrary"/> used to compile this code.
     /// </summary>
     public ICollection<IMotionLibrary> Libraries { get; set; } = new List<IMotionLibrary>();

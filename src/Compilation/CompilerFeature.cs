@@ -19,11 +19,6 @@ public enum CompilerFeature
     AllowParenthesislessCode = 1 << 1,
 
     /// <summary>
-    /// Indicates that the compile library should include console methods.
-    /// </summary>
-    EnableConsoleMethods = 1 << 2,
-
-    /// <summary>
     /// Indicates that the runtime can trace user defined functions calls.
     /// </summary>
     TraceUserFunctionsCalls = 1 << 3,

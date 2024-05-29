@@ -7,11 +7,22 @@ using System.Threading.Tasks;
 
 namespace Motion.Runtime;
 
+/// <summary>
+/// Represents an object which is present in the Motion code.
+/// </summary>
+/// <typeparam name="TValue">The type of the object.</typeparam>
 public class AtomicInformation<TValue>
 {
     TextInterpreterSnapshot snapshot;
 
+    /// <summary>
+    /// Gets the information name.
+    /// </summary>
     public string Name { get; }
+
+    /// <summary>
+    /// Gets the information value.
+    /// </summary>
     public TValue Value { get; private set; }
 
     /// <summary>

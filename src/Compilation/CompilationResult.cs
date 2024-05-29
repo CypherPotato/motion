@@ -56,9 +56,9 @@ public sealed class CompilationResult
         context.ImportLibrary(new Runtime.StandardLibrary.StdMath());
         context.ImportLibrary(new Runtime.StandardLibrary.StdRandom());
         context.ImportLibrary(new Runtime.StandardLibrary.StdCType());
-        context.ImportLibrary(new Runtime.StandardLibrary.StdAtoms());
+        //context.ImportLibrary(new Runtime.StandardLibrary.StdAtoms());
 
-        if (Options.Features.HasFlag(CompilerFeature.EnableConsoleMethods))
+        if (Options.StandardLibraries.HasFlag(CompilerStandardLibrary.StdConsole))
             context.ImportLibrary(new Runtime.StandardLibrary.StdConsole());
 
         foreach (IMotionLibrary lib in Options.Libraries)

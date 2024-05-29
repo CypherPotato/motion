@@ -18,7 +18,7 @@ public static class Compiler
     /// <summary>
     /// Gets the Motion version text.
     /// </summary>
-    public const string MotionVersion = "v0.1-alpha-2";
+    public const string MotionVersion = "v0.1-alpha-3";
 
     /// <summary>
     /// Compiles and runs the specified Motion code into their respective atomic values. This method throws an <see cref="MotionException"/> if the

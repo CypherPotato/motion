@@ -156,12 +156,13 @@ public class MotionCollection<TValue> : IEnumerable<AtomicInformation<TValue>>
     /// Adds or sets the specified name in this <see cref="MotionCollection{TValue}"/>.
     /// </summary>
     /// <param name="key">The symbol name.</param>
-    /// <param name="newValue">The object value.</param>
+    /// <param name="value">The object value.</param>
     public void Set(string key, TValue value) => Set(new Atom(AtomBase.Undefined, AtomBase.Undefined, Context), key, value);
 
     /// <summary>
     /// Adds or sets the specified name in this <see cref="MotionCollection{TValue}"/>.
     /// </summary>
+    /// <param name="declaringAtom">The atom where this set action is being called.</param>
     /// <param name="key">The symbol name.</param>
     /// <param name="newValue">The object value.</param>
     /// <exception cref="InvalidOperationException"></exception>
@@ -194,6 +195,7 @@ public class MotionCollection<TValue> : IEnumerable<AtomicInformation<TValue>>
     /// <summary>
     /// Adds the specified name and value in this <see cref="MotionCollection{TValue}"/>.
     /// </summary>
+    /// <param name="declaringAtom">The atom where this set action is being called.</param>
     /// <param name="key">The symbol name.</param>
     /// <param name="value">The object value.</param>
     /// <exception cref="InvalidOperationException"></exception>
