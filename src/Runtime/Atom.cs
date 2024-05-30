@@ -73,6 +73,7 @@ public struct Atom
             TokenType.Number => AtomType.NumberLiteral,
             TokenType.Boolean => AtomType.BooleanLiteral,
             TokenType.Expression => AtomType.Expression,
+            TokenType.Array => AtomType.Array,
             TokenType.Symbol => AtomType.Symbol,
             TokenType.Keyword => AtomType.Keyword,
             TokenType.Operator => AtomType.Operator,

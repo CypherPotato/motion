@@ -43,6 +43,11 @@ public enum AtomType
     Expression,
 
     /// <summary>
+    /// Represents an array atom.
+    /// </summary>
+    Array,
+
+    /// <summary>
     /// Represents an <see cref="Atom"/> which holds an symbol text.
     /// </summary>
     Symbol,

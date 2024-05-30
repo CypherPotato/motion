@@ -12,11 +12,17 @@ struct AtomBase
 {
     public const char Ch_ExpressionStart = '(';
     public const char Ch_ExpressionEnd = ')';
+
+    public const char Ch_ArrStart = '[';
+    public const char Ch_ArrEnd = ']';
+
     public const char Ch_StringQuote = '"';
     public const char Ch_RawStringId = '#';
     public const char Ch_StringVerbatin = '^';
     public const char Ch_StringEscape = '\\';
+
     public const char Ch_CharacterLiteral = '\\';
+
     public const char Ch_CommentChar = ';';
 
     public static readonly char[] AllowedFirstSymbolChars = new char[] {
@@ -230,6 +236,7 @@ internal enum TokenType
 
     // represents an entire token group
     Expression = 40,
+    Array = 41,
 
     // represents an literal symbol or identifier
     Symbol = 70,

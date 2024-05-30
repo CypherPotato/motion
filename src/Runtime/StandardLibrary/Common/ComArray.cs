@@ -15,6 +15,7 @@ internal class ComArray : IMotionLibrary
 
         context.Methods.Add("dotimes", DoTimes);
         context.Methods.Add("map", Map);
+        context.Methods.Add("carry", Carry);
         context.Methods.Add("while", While);
         context.Methods.Add("length", Length);
         context.Methods.Add("aref", Aref);
@@ -42,7 +43,7 @@ internal class ComArray : IMotionLibrary
     object? MakeObject(Atom self)
     {
         var obj = new MotionObject();
-        foreach(string word in self.Keywords)
+        foreach (string word in self.Keywords)
         {
             obj.Add(word, self.GetAtom(word).Nullable()?.GetObject());
         }
@@ -73,6 +74,27 @@ internal class ComArray : IMotionLibrary
         }
 
         return result;
+    }
+
+    object? Carry(Atom self, Atom iteratorExp, Atom body)
+    {
+        object? carry = null;
+
+        var iteratorArr = (IEnumerable)iteratorExp.GetAtom(0).GetObject();
+
+        var iteratorCurrent = iteratorExp.GetAtom(1).GetSymbol();
+        var iteratorCarry = iteratorExp.GetAtom(2).GetSymbol();
+
+        carry = iteratorExp.GetAtom(3).Nullable()?.GetObject();
+
+        foreach (var item in iteratorArr)
+        {
+            self.Context.SetVariable(iteratorCurrent, item);
+            self.Context.SetVariable(iteratorCarry, carry);
+            carry = body.Nullable()?.GetObject();
+        }
+
+        return carry;
     }
 
     ArrayList Map(Atom self, Atom iteratorExp, Atom body)

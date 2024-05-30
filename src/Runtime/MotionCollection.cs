@@ -171,7 +171,7 @@ public class MotionCollection<TValue> : IEnumerable<AtomicInformation<TValue>>
         string _key = FormatInsertingKey(key);
 
         foreach (var at in _m)
-            if (string.Compare(at.Name, key, true) == 0)
+            if (string.Compare(at.Name, _key, true) == 0)
             {
                 if (!CanEdit)
                 {

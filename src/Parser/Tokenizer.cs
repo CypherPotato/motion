@@ -106,6 +106,14 @@ class Tokenizer : IDisposable
                     child.Add(subExp);
                     break;
 
+                case AtomBase.Ch_ArrStart:
+
+                    AtomBase arr = ReadArray();
+                    arr.Keyword = TakeKeyword();
+
+                    child.Add(arr);
+                    break;
+
                 case AtomBase.Ch_RawStringId:
 
                     interpreter.Read();
@@ -134,7 +142,7 @@ class Tokenizer : IDisposable
 
                 default:
 
-                    AtomBase c = ReadCarry(true);
+                    AtomBase c = ReadCarry(true, true);
                     if (c.Type == TokenType.Keyword)
                     {
                         lastKeyword = c.Content?.ToString();
@@ -214,6 +222,14 @@ class Tokenizer : IDisposable
                     child.Add(subExp);
                     break;
 
+                case AtomBase.Ch_ArrStart:
+
+                    AtomBase arr = ReadArray();
+                    arr.Keyword = TakeKeyword();
+
+                    child.Add(arr);
+                    break;
+
                 case AtomBase.Ch_RawStringId:
 
                     interpreter.Read();
@@ -242,7 +258,7 @@ class Tokenizer : IDisposable
 
                 default:
 
-                    AtomBase c = ReadCarry(false);
+                    AtomBase c = ReadCarry(true, false);
 
                     if (c.Type == TokenType.Keyword)
                     {
@@ -262,6 +278,97 @@ class Tokenizer : IDisposable
         }
 
         throw interpreter.ExceptionManager.ExpectToken(AtomBase.Ch_ExpressionEnd.ToString());
+    }
+
+    AtomBase ReadArray()
+    {
+        List<AtomBase> child = new List<AtomBase>();
+
+        interpreter.SkipWhitespace();
+
+        var expStart = interpreter.GetSnapshot(0);
+        interpreter.Assert(AtomBase.Ch_ArrStart);
+
+        interpreter.SkipWhitespace();
+
+        while (interpreter.CanRead)
+        {
+            interpreter.SkipWhitespace();
+            var peek = interpreter.Peek();
+
+            switch (peek)
+            {
+                case AtomBase.Ch_CommentChar:
+                    interpreter.SkipComment();
+                    break;
+
+                case AtomBase.Ch_ExpressionStart:
+
+                    AtomBase subExp = ReadExpression();
+                    child.Add(subExp);
+
+                    break;
+
+                case AtomBase.Ch_ArrStart:
+
+                    AtomBase subArr = ReadArray();
+                    child.Add(subArr);
+
+                    break;
+
+
+                case AtomBase.Ch_ArrEnd:
+
+                    interpreter.Read();
+
+                    expStart.Length = interpreter.Position.index - expStart.Index;
+                    return new AtomBase(expStart, TokenType.Array)
+                    {
+                        Children = child.ToArray()
+                    };
+
+                case AtomBase.Ch_RawStringId:
+
+                    interpreter.Read();
+                    if (interpreter.Peek() == AtomBase.Ch_StringQuote)
+                    {
+                        AtomBase sltr = ReadRawStringLiteral();
+                        child.Add(sltr);
+                    }
+                    else
+                    {
+                        goto default;
+                    }
+
+                    break;
+
+                case AtomBase.Ch_StringQuote:
+                case AtomBase.Ch_StringVerbatin:
+
+                    AtomBase at = ReadString();
+                    child.Add(at);
+                    break;
+
+                default:
+
+                    AtomBase c = ReadCarry(false, false);
+
+                    if (c.Type == TokenType.Keyword)
+                    {
+                        throw interpreter.ExceptionManager.UnknownExpression(c.Content!.ToString()!, c.Location);
+                    }
+                    else
+                    {
+                        child.Add(c);
+                    }
+
+                    break;
+            }
+
+            interpreter.SkipWhitespace();
+        }
+
+        throw interpreter.ExceptionManager.ExpectToken(AtomBase.Ch_ArrEnd.ToString());
     }
 
     AtomBase ReadRawStringLiteral()
@@ -360,7 +467,7 @@ class Tokenizer : IDisposable
         throw interpreter.ExceptionManager.ExpectToken(AtomBase.Ch_StringQuote.ToString());
     }
 
-    AtomBase ReadCarry(bool isOnParenthesislessContext)
+    AtomBase ReadCarry(bool isExp, bool isOnParenthesislessContext)
     {
         StringBuilder sb = new StringBuilder();
         bool fullyRead = false;
@@ -372,7 +479,9 @@ class Tokenizer : IDisposable
         {
             var peek = interpreter.Peek();
 
-            if (TextInterpreter.IsWhiteSpace(peek) || peek == AtomBase.Ch_ExpressionEnd)
+            if (TextInterpreter.IsWhiteSpace(peek) ||
+                (isExp && peek == AtomBase.Ch_ExpressionEnd) ||
+                (!isExp && peek == AtomBase.Ch_ArrEnd))
             {
                 fullyRead = true;
                 break;

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -376,53 +377,44 @@ public class ExecutionContext
     /// Executes the compiled code and returns all evaluated results from defined atoms in this context.
     /// </summary>
     /// <returns>The evaluated objects from the defined atoms.</returns>
-    public object?[] Evaluate()
+    public object? Evaluate()
     {
-        Task<object?[]> evalTask = EvaluateAsync();
-        return evalTask.GetAwaiter().GetResult();
+        try
+        {
+            for (int i = 0; i < compilerResult.tokens.Length; i++)
+            {
+                if (CancellationToken?.IsCancellationRequested == true)
+                    return null;
+
+                AtomBase t = compilerResult.tokens[i];
+                if (i == compilerResult.tokens.Length - 1)
+                {
+                    return EvaluateTokenItem(t, AtomBase.Undefined);
+                }
+                else
+                {
+                    EvaluateTokenItem(t, AtomBase.Undefined);
+                }
+            }
+            return null;
+        }
+        catch (MotionExitException e)
+        {
+            return e.Result;
+        }
     }
 
     /// <summary>
     /// Executes the compiled code asynchronously and returns the evaluated result from defined atoms in this context.
     /// </summary>
     /// <returns>The evaluated objects from the defined atoms.</returns>
-    public async Task<object?[]> EvaluateAsync()
+    public Task<object?> EvaluateAsync()
     {
-        return await Task.Run(() =>
-        {
-            try
-            {
-                object?[] results = new object[compilerResult.tokens.Length];
-
-                for (int i = 0; i < compilerResult.tokens.Length; i++)
-                {
-                    if (CancellationToken?.IsCancellationRequested == true)
-                        return results;
-
-                    AtomBase t = compilerResult.tokens[i];
-                    results[i] = EvaluateTokenItem(t, AtomBase.Undefined);
-                }
-
-                return results;
-            }
-            catch (MotionExitException ext)
-            {
-                return new object?[] { ext.Result };
-            }
-        });
-    }
-
-    void Trace(string message)
-    {
-        if (Global.Variables.TryGetValue("$trace", out object? b) && b is bool B && B == true)
-        {
-            traceWriter.WriteLine(new string(' ', level) + message);
-        }
+        return Task.Run(Evaluate);
     }
 
     internal object? EvaluateTokenItem(AtomBase t, AtomBase parent)
     {
-        bool isTracingResult = false;
         object? result = null;
         Exception? exception = null;
         TextInterpreterSnapshot expSymbolLocation = default;
@@ -482,6 +474,18 @@ public class ExecutionContext
                         }
                     }
 
+                case TokenType.Array:
+                    {
+                        object?[] items = new object?[t.Children.Length];
+
+                        for (int i = 0; i < items.Length; i++)
+                        {
+                            items[i] = EvaluateTokenItem(t.Children[i], t);
+                        }
+
+                        return items;
+                    }
+
                 case TokenType.Expression:
                     {
                         int count = t.Children.Length;
@@ -526,12 +530,6 @@ public class ExecutionContext
 
                             if (TryResolveMethod(name, out var methodValue))
                             {
-                                if (compilerResult.Options.Features.HasFlag(CompilerFeature.TraceRuntimeFunctionsCalls))
-                                {
-                                    isTracingResult = true;
-                                    Trace($"{level}: {t}");
-                                }
-
                                 result = methodValue!.Invoke(new Atom(t, parent, this));
                                 return result;
                             }
@@ -539,23 +537,6 @@ public class ExecutionContext
                             {
                                 if (TryResolveUserFunction(name, out var userFuncValue))
                                 {
-                                    if (compilerResult.Options.Features.HasFlag(CompilerFeature.TraceUserFunctionsCalls))
-                                    {
-                                        isTracingResult = true;
-                                        if (compilerResult.Options.Features.HasFlag(CompilerFeature.TraceUserFunctionsVariables))
-                                        {
-                                            StringBuilder s = new StringBuilder();
-
-                                            foreach (AtomicInformation<object?> v in CallingParameters._m)
-                                                s.Append($"{v.Name} = {v.Value}");
-
-                                            Trace($"{level}: {t} {{ {s} }}");
-                                        }
-                                        else
-                                        {
-                                            Trace($"{level}: {t}");
-                                        }
-                                    }
                                     result = userFuncValue!.Invoke(t, Fork(ExecutionContextScope.Function));
                                     return result;
                                 }
@@ -634,17 +615,7 @@ public class ExecutionContext
         }
         finally
         {
-            if (isTracingResult)
-            {
-                if (exception is not null)
-                {
-                    Trace($"{level}: {t} raised {exception.GetType().Name}: {exception.Message}");
-                }
-                else
-                {
-                    Trace($"{level}: {t} returned {result} <{result?.GetType().Name ?? "NIL"}>");
-                }
-            }
+            ;
         }
     }
 }

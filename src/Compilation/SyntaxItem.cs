@@ -106,6 +106,16 @@ public enum SyntaxItemType
     ExpressionEnd,
 
     /// <summary>
+    /// Represents the array opening character.
+    /// </summary>
+    ArrayStart,
+
+    /// <summary>
+    /// Represents the array closing character.
+    /// </summary>
+    ArrayEnd,
+
+    /// <summary>
     /// Represents an symbol.
     /// </summary>
     Symbol,

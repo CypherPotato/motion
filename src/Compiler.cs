@@ -26,8 +26,7 @@ public static class Compiler
     /// </summary>
     /// <param name="code">The Motion code to run.</param>
     /// <param name="options">Optional. Defines the <see cref="CompilerOptions"/> options to the compiler.</param>
-    /// <returns>An array of results of the returned atom values.</returns>
-    public static object?[] Evaluate(string code, CompilerOptions? options = null)
+    public static object? Evaluate(string code, CompilerOptions? options = null)
     {
         var result = Compile(code, options);
         if (!result.Success)

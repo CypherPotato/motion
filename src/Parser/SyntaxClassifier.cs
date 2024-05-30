@@ -59,6 +59,18 @@ public sealed class SyntaxClassifier : IDisposable
                     interpreter.Read();
                     break;
 
+                case AtomBase.Ch_ArrStart:
+                    items.Add(new SyntaxItem(p.ToString(), SyntaxItemType.ArrayStart, expressionDepth, interpreter.GetSnapshot(1)));
+                    interpreter.Read();
+                    expressionDepth++;
+                    break;
+
+                case AtomBase.Ch_ArrEnd:
+                    expressionDepth--;
+                    items.Add(new SyntaxItem(p.ToString(), SyntaxItemType.ArrayEnd, expressionDepth, interpreter.GetSnapshot(1)));
+                    interpreter.Read();
+                    break;
+
                 case AtomBase.Ch_StringQuote:
                 case AtomBase.Ch_StringVerbatin:
                     items.Add(ReadString());
@@ -229,7 +241,9 @@ public sealed class SyntaxClassifier : IDisposable
         {
             var peek = interpreter.Peek();
 
-            if (TextInterpreter.IsWhiteSpace(peek) || peek == AtomBase.Ch_ExpressionEnd)
+            if (TextInterpreter.IsWhiteSpace(peek) ||
+                 (peek == AtomBase.Ch_ExpressionEnd) ||
+                 (peek == AtomBase.Ch_ArrEnd))
             {
                 break;
             }
