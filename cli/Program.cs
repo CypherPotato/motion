@@ -193,7 +193,7 @@ internal class Program
                 {
                     format = Theme.StringLiteral;
                 }
-                else if (item.Type is SyntaxItemType.ExpressionStart)
+                else if (item.Type is SyntaxItemType.ExpressionStart or SyntaxItemType.ArrayStart)
                 {
                     format = Theme.ParenthesisCommon;
                     if (item.Position == Caret && LastPressedKey != ConsoleKey.Enter)
@@ -203,7 +203,7 @@ internal class Program
                         matchDepth = item.ExpressionDepth;
                     }
                 }
-                else if (item.Type is SyntaxItemType.ExpressionEnd)
+                else if (item.Type is SyntaxItemType.ExpressionEnd or SyntaxItemType.ArrayEnd)
                 {
                     format = Theme.ParenthesisCommon;
                     if (item.Position == Caret && LastPressedKey != ConsoleKey.Enter)
@@ -255,12 +255,12 @@ internal class Program
                         {
                             continue;
                         }
-                        if (n == 0 && key.Type is SyntaxItemType.ExpressionStart && key.ExpressionDepth == matchDepth)
+                        if (n == 0 && key.Type is SyntaxItemType.ExpressionStart or SyntaxItemType.ArrayStart && key.ExpressionDepth == matchDepth)
                         {
                             result[key] = new FormatSpan(result[key].Span, Program.Theme.ParenthesisMatch);
                             n = 1;
                         }
-                        else if (n == 1 && key.Type is SyntaxItemType.ExpressionEnd && key.ExpressionDepth == matchDepth)
+                        else if (n == 1 && key.Type is SyntaxItemType.ExpressionEnd or SyntaxItemType.ArrayEnd && key.ExpressionDepth == matchDepth)
                         {
                             result[key] = new FormatSpan(result[key].Span, Program.Theme.ParenthesisMatch);
                             break;
@@ -276,12 +276,12 @@ internal class Program
                         {
                             continue;
                         }
-                        if (n == 0 && key.Type is SyntaxItemType.ExpressionEnd && key.ExpressionDepth == matchDepth)
+                        if (n == 0 && key.Type is SyntaxItemType.ExpressionEnd or SyntaxItemType.ArrayEnd && key.ExpressionDepth == matchDepth)
                         {
                             result[key] = new FormatSpan(result[key].Span, Program.Theme.ParenthesisMatch);
                             n = 1;
                         }
-                        else if (n == 1 && key.Type is SyntaxItemType.ExpressionStart && key.ExpressionDepth == matchDepth)
+                        else if (n == 1 && key.Type is SyntaxItemType.ExpressionStart or SyntaxItemType.ArrayStart && key.ExpressionDepth == matchDepth)
                         {
                             result[key] = new FormatSpan(result[key].Span, Program.Theme.ParenthesisMatch);
                             break;

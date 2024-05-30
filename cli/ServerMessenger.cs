@@ -11,6 +11,7 @@ using static MotionCLI.Program;
 using LightJson;
 using Spectre.Console;
 using Spectre.Console.Json;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace MotionCLI;
 
@@ -18,23 +19,25 @@ internal static class ServerMessenger
 {
     public static async Task Init()
     {
+        using HttpClient client = new HttpClient();
         Console.WriteLine($"Motion Messaging Client [Cli. {Program.ClientVersionString}/Lang. {Motion.Compiler.MotionVersion}]");
 
+        var sessionId = Guid.NewGuid();
         var promptString = "";
         var motionPromptCallback = new MotionPromptCallback();
 
         // connect to server
-        using (HttpClient client = new HttpClient())
         {
             HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, Program.ServerEndpoint);
             requestMessage.Headers.TryAddWithoutValidation("Authorization", Program.ServerAuth);
+            requestMessage.Headers.TryAddWithoutValidation("Session-Id", sessionId.ToString());
 
             HttpResponseMessage resMsg = client.Send(requestMessage);
             if (resMsg.StatusCode == System.Net.HttpStatusCode.OK)
             {
                 JsonObject json = JsonValue.Deserialize(resMsg.Content.ReadAsStringAsync().Result).GetJsonObject();
 
-                promptString = json["domain"].GetString() + "> ";
+                promptString = json["domain"].GetString() + " -> ";
 
                 foreach (JsonValue s in json["symbols"]["methods"].GetJsonArray())
                     motionPromptCallback.AutocompleteTerms.Add((s.GetString(), Program.Theme.MenuMethod, $"Remote method {s.GetString()}"));
@@ -88,10 +91,10 @@ internal static class ServerMessenger
                 continue;
             }
 
-            using (HttpClient client = new HttpClient())
             {
                 HttpRequestMessage reqMsg = new HttpRequestMessage(HttpMethod.Post, Program.ServerEndpoint);
                 reqMsg.Headers.TryAddWithoutValidation("Authorization", Program.ServerAuth);
+                reqMsg.Headers.TryAddWithoutValidation("Session-Id", sessionId.ToString());
                 reqMsg.Content = new StringContent(data, Encoding.UTF8, "application/x-motion-code");
 
                 HttpResponseMessage resMsg = client.Send(reqMsg);
@@ -108,6 +111,25 @@ internal static class ServerMessenger
 
                 Console.WriteLine();
             }
+        }
+
+        {
+            HttpRequestMessage reqMsg = new HttpRequestMessage(HttpMethod.Delete, Program.ServerEndpoint);
+            reqMsg.Headers.TryAddWithoutValidation("Session-Id", sessionId.ToString());
+
+            HttpResponseMessage resMsg = client.Send(reqMsg);
+            string? dres = resMsg.Content.ReadAsStringAsync().Result;
+
+            if (resMsg.Content.Headers.ContentType?.MediaType?.Contains("/json") == true)
+            {
+                AnsiConsole.Write(new JsonText(dres));
+            }
+            else
+            {
+                Console.WriteLine(dres.ReplaceLineEndings());
+            }
+
+            Console.WriteLine();
         }
     }
 }

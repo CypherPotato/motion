@@ -58,12 +58,11 @@ internal static class Interactive
         CompilerOptions options = new CompilerOptions()
         {
             Features =
-                  CompilerFeature.AllowParenthesislessCode
-                | CompilerFeature.EnableConsoleMethods
-                | CompilerFeature.TraceUserFunctionsCalls
-                | CompilerFeature.TraceUserFunctionsVariables,
+                  CompilerFeature.AllowParenthesislessCode,
 
             Libraries = references,
+
+            StandardLibraries = CompilerStandardLibrary.All,
 
             EnumExports = new EnumExport[]
             {
