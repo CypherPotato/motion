@@ -1,17 +1,11 @@
 ﻿using Motion;
 using PrettyPrompt.Highlighting;
-using PrettyPrompt;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using static MotionCLI.Program;
 using LightJson;
 using Spectre.Console;
 using Spectre.Console.Json;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using PrettyPrompt;
 
 namespace MotionCLI;
 
@@ -25,8 +19,9 @@ internal static class ServerMessenger
         var sessionId = Guid.NewGuid();
         var promptString = "";
         var motionPromptCallback = new MotionPromptCallback();
-
+        
         // connect to server
+        void PingServer()
         {
             HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, Program.ServerEndpoint);
             requestMessage.Headers.TryAddWithoutValidation("Authorization", Program.ServerAuth);
@@ -35,18 +30,23 @@ internal static class ServerMessenger
             HttpResponseMessage resMsg = client.Send(requestMessage);
             if (resMsg.StatusCode == System.Net.HttpStatusCode.OK)
             {
+                motionPromptCallback.AutocompleteTerms.Clear();
                 JsonObject json = JsonValue.Deserialize(resMsg.Content.ReadAsStringAsync().Result).GetJsonObject();
 
                 promptString = json["domain"].GetString() + " -> ";
 
                 foreach (JsonValue s in json["symbols"]["methods"].GetJsonArray())
                     motionPromptCallback.AutocompleteTerms.Add((s.GetString(), Program.Theme.MenuMethod, $"Remote method {s.GetString()}"));
+                ;
                 foreach (JsonValue s in json["symbols"]["user_functions"].GetJsonArray())
                     motionPromptCallback.AutocompleteTerms.Add((s.GetString(), Program.Theme.MenuUserFunction, $"Remote function {s.GetString()}"));
+                ;
                 foreach (JsonValue s in json["symbols"]["variables"].GetJsonArray())
                     motionPromptCallback.AutocompleteTerms.Add((s.GetString(), Program.Theme.MenuVariable, $"Remote variable {s.GetString()}"));
+                ;
                 foreach (JsonValue s in json["symbols"]["constants"].GetJsonArray())
                     motionPromptCallback.AutocompleteTerms.Add((s.GetString(), Program.Theme.MenuConstant, $"Remote constant {s.GetString()}"));
+                ;
                 foreach (JsonValue s in json["symbols"]["aliases"].GetJsonArray())
                     motionPromptCallback.AutocompleteTerms.Add((s.GetString(), Program.Theme.MenuAlias, $"Remote alias {s.GetString()}"));
             }
@@ -67,6 +67,8 @@ internal static class ServerMessenger
             }
         }
 
+        PingServer();
+
         await using var prompt = new Prompt(
             persistentHistoryFilepath: "./history-file",
             callbacks: motionPromptCallback,
@@ -78,6 +80,7 @@ internal static class ServerMessenger
 
         while (true)
         {
+            PingServer();
             var response = await prompt.ReadLineAsync();
             var data = response.Text;
 

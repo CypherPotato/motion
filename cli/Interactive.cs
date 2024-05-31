@@ -126,19 +126,29 @@ internal static class Interactive
         context.Variables.Set("$last-result", null);
 
         // get auto complete items
-        foreach (AtomicInformation<object?> variable in context.Variables)
-            motionPromptCallback.AutocompleteTerms.Add((variable.Name, Program.Theme.MenuVariable, AutoMenuFunctions.BuildVariableAutomenu(variable)));
-        foreach (var constant in context.Constants)
-            motionPromptCallback.AutocompleteTerms.Add((constant.Name, Program.Theme.MenuConstant, AutoMenuFunctions.BuildConstantAutomenu(constant)));
-        foreach (var method in context.Methods)
-            motionPromptCallback.AutocompleteTerms.Add((method.Name, Program.Theme.MenuMethod, AutoMenuFunctions.BuildMethodAutomenu(method)));
-        foreach (AtomicInformation<MotionUserFunction> func in context.UserFunctions)
-            motionPromptCallback.AutocompleteTerms.Add((func.Name, Program.Theme.MenuUserFunction, AutoMenuFunctions.BuildUserFunctionAutomenu(func)));
-        foreach (var alias in context.Aliases.Keys)
-            motionPromptCallback.AutocompleteTerms.Add((alias, Program.Theme.MenuAlias, $"Alias {alias}"));
+        void UpdateAutocompleteItems()
+        {
+            motionPromptCallback.AutocompleteTerms.Clear();
+
+            foreach (var variable in context.Variables)
+                motionPromptCallback.AutocompleteTerms.Add((variable.Key, Program.Theme.MenuVariable, AutoMenuFunctions.BuildVariableAutomenu(variable)));
+            ;
+            foreach (var constant in context.Constants)
+                motionPromptCallback.AutocompleteTerms.Add((constant.Key, Program.Theme.MenuConstant, AutoMenuFunctions.BuildConstantAutomenu(constant)));
+            ;
+            foreach (var method in context.Methods)
+                motionPromptCallback.AutocompleteTerms.Add((method.Key, Program.Theme.MenuMethod, AutoMenuFunctions.BuildMethodAutomenu(method)));
+            ;
+            foreach (var func in context.UserFunctions)
+                motionPromptCallback.AutocompleteTerms.Add((func.Key, Program.Theme.MenuUserFunction, AutoMenuFunctions.BuildUserFunctionAutomenu(func)));
+            ;
+            foreach (var alias in context.Aliases.Keys)
+                motionPromptCallback.AutocompleteTerms.Add((alias, Program.Theme.MenuAlias, $"Alias {alias}"));
+        }
 
         while (true)
         {
+            UpdateAutocompleteItems();
             var response = await prompt.ReadLineAsync();
             var data = response.Text;
 

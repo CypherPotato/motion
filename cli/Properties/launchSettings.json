@@ -2,6 +2,10 @@
   "profiles": {
     "MotionCLI": {
       "commandName": "Project"
+    },
+    "Profile 1": {
+      "commandName": "Project",
+      "commandLineArgs": "-e http://localhost:4446/v1/motion\r\n-u gscatolin@outlook.com:552333"
     }
   }
 }

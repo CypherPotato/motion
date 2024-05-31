@@ -11,12 +11,12 @@ namespace MotionCLI;
 
 public class AutoMenuFunctions
 {
-    public static FormattedString BuildVariableAutomenu(AtomicInformation<object?> information)
+    public static FormattedString BuildVariableAutomenu(KeyValuePair<string, object?> information)
     {
         var b = new FormattedString();
 
         b += new FormattedString("variable ");
-        b += new FormattedString(information.Name, Program.Theme.MenuVariable);
+        b += new FormattedString(information.Key, Program.Theme.MenuVariable);
         b += new FormattedString("\n\n");
         b += new FormattedString("type: ");
 
@@ -36,12 +36,12 @@ public class AutoMenuFunctions
         return b;
     }
 
-    public static FormattedString BuildConstantAutomenu(AtomicInformation<object?> information)
+    public static FormattedString BuildConstantAutomenu(KeyValuePair<string, object?> information)
     {
         var b = new FormattedString();
 
         b += new FormattedString("constant ");
-        b += new FormattedString(information.Name, Program.Theme.MenuConstant);
+        b += new FormattedString(information.Key, Program.Theme.MenuConstant);
         b += new FormattedString("\n\n");
         b += new FormattedString("type: ");
 
@@ -61,12 +61,12 @@ public class AutoMenuFunctions
         return b;
     }
 
-    public static FormattedString BuildUserFunctionAutomenu(AtomicInformation<MotionUserFunction> information)
+    public static FormattedString BuildUserFunctionAutomenu(KeyValuePair<string, MotionUserFunction> information)
     {
         var b = new FormattedString();
 
         b += new FormattedString("user function ");
-        b += new FormattedString(information.Name, Program.Theme.MenuUserFunction);
+        b += new FormattedString(information.Key, Program.Theme.MenuUserFunction);
         b += new FormattedString("\n");
 
         var parameters = information.Value.Arguments;
@@ -74,7 +74,7 @@ public class AutoMenuFunctions
         {
             var p = parameters[i];
 
-            b += new FormattedString("-   :" + p, Program.Theme.Keyword);        
+            b += new FormattedString("-   :" + p, Program.Theme.Keyword);
             b += new FormattedString("\n");
         }
 
@@ -85,13 +85,13 @@ public class AutoMenuFunctions
         return b;
     }
 
-    public static FormattedString BuildMethodAutomenu(AtomicInformation<Delegate> information)
+    public static FormattedString BuildMethodAutomenu(KeyValuePair<string, Delegate> information)
     {
         var parameters = information.Value.Method.GetParameters();
         var b = new FormattedString();
 
         b += new FormattedString("method ");
-        b += new FormattedString(information.Name, Program.Theme.MenuUserFunction);
+        b += new FormattedString(information.Key, Program.Theme.MenuUserFunction);
         b += new FormattedString("\n");
 
         for (int i = 0; i < parameters.Length; i++)
