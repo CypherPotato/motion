@@ -30,6 +30,11 @@ internal class Program
 
     public static Theme Theme = new Theme();
 
+    public static void SayHello()
+    {
+        Console.WriteLine("Hello, world!!!");
+    }
+
     public static void SetTitle(string? message)
     {
         Console.Title = $"Motion CLI | {_program}" + (message is null ? "" : " | " + message);

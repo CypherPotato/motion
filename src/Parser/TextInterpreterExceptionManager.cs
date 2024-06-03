@@ -18,7 +18,7 @@ internal class TextInterpreterExceptionManager
 
     public MotionException UnknownExpression(string token, TextInterpreterSnapshot snapshot)
     {
-        return new MotionException($"unknown expression: '{token}'.", snapshot, null);
+        return new MotionException($"unexpected token: '{token}'.", snapshot, null);
     }
 
     public MotionException UnexpectedToken(string token)

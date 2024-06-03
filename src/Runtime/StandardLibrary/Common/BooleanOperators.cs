@@ -24,7 +24,6 @@ internal class BooleanOperators : IMotionLibrary
         context.Methods.Add("or", Or);
         context.Methods.Add("xor", Xor);
         context.Methods.Add("not", Not);
-        context.Methods.Add("if", If);
 
         context.Methods.Add("<", Lt);
         context.Methods.Add("<=", Lte);
@@ -37,10 +36,23 @@ internal class BooleanOperators : IMotionLibrary
         context.Methods.Add("minusp", Minusp);
         context.Methods.Add("plusp", Plusp);
 
+        context.Methods.Add("if", If);
         context.Methods.Add("cond", Cond);
-        context.Methods.Add("if-nil", IfNull);
-        context.Methods.Add("is-nil", IsNull);
-        context.Methods.Add("is-not-nil", IsNotNull);
+
+        context.Methods.Add("is-nil", (object? s) => s is null);
+        context.Methods.Add("is-not-nil", (object? s) => s is not null);
+
+        context.Methods.Add("is-string", (object? s) => s is string);
+        context.Methods.Add("is-number", (object? s) =>
+            s is
+                double or float or decimal
+              or
+                byte or short or int or long
+              or
+                sbyte or ushort or uint or ulong
+        );
+        context.Methods.Add("is-real", (object? s) => s is double or float or decimal);
+        context.Methods.Add("is-bool", (object? s) => s is bool);
     }
 
     bool Gt(dynamic a, dynamic b)
@@ -139,38 +151,6 @@ internal class BooleanOperators : IMotionLibrary
             }
         }
         return null;
-    }
-
-    object? IfNull(Atom self)
-    {
-        self.EnsureExactItemCount(3);
-
-        bool isUndefinedSym = false;
-        var atz = self.GetAtom(1);
-
-        if (atz.Type == AtomType.Symbol && !atz.Context.IsSymbolDefined(atz.GetSymbol()))
-        {
-            isUndefinedSym = true;
-        }
-
-        if (!isUndefinedSym && atz.Nullable()?.GetObject() is { } obj)
-        {
-            return obj;
-        }
-        else
-        {
-            return self.GetAtom(2).Nullable()?.GetObject();
-        }
-    }
-
-    bool IsNull(object? b)
-    {
-        return b is null;
-    }
-
-    bool IsNotNull(object? b)
-    {
-        return b is not null;
     }
 
     object? If(Atom self)

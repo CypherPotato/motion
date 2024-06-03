@@ -1,5 +1,6 @@
 ﻿using Motion.Parser;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -472,5 +473,27 @@ public struct Atom
         }
         ResetTokenValue();
         return b;
+    }
+
+    /// <summary>
+    /// Gets the value of this atom, throws an exception if null.
+    /// </summary>
+    /// <returns>The value of the atom.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if the atom's value is null or cannot be converted.</exception>
+    public IEnumerable<object?> GetArray()
+    {
+        object? b = ResolveTokenValue();
+        if (b == null)
+        {
+            yield return ThrowNullObject<IEnumerable<object?>>("array");
+            yield break;
+        }
+        ResetTokenValue();
+
+        IEnumerable s = (IEnumerable)b;
+        foreach (object? o in s)
+        {
+            yield return o;
+        }
     }
 }

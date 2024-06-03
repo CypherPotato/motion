@@ -18,9 +18,32 @@ internal class ComArray : IMotionLibrary
         context.Methods.Add("carry", Carry);
         context.Methods.Add("while", While);
         context.Methods.Add("length", Length);
+
         context.Methods.Add("aref", Aref);
+        context.Methods.Add("aset", Aset);
 
         context.Methods.Add("lpush", Lpush);
+        context.Methods.Add("lrem", Lrem);
+    }
+
+    IList Lrem(Atom self, IList item, object? key)
+    {
+        if (self.HasKeyword("index"))
+        {
+            if (key is int n)
+            {
+                item.RemoveAt(n);
+            }
+            else
+            {
+                throw MotionException.CreateIncorrectType(self.GetAtom(2), typeof(int));
+            }
+        }
+        else
+        {
+            item.Remove(key);
+        }
+        return item;
     }
 
     IList Lpush(IList item, object? value)
@@ -133,5 +156,10 @@ internal class ComArray : IMotionLibrary
     dynamic? Aref(dynamic dynamics, dynamic? key)
     {
         return dynamics[key];
+    }
+
+    dynamic? Aset(dynamic dynamics, dynamic? key, dynamic? value)
+    {
+        return dynamics[key] = value;
     }
 }

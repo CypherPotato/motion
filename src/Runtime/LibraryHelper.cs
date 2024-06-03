@@ -64,7 +64,14 @@ public static class LibraryHelper
             else if (param.GetCustomAttribute<ParamArrayAttribute>() != null)
             {
                 paramsIndex = i;
-                paramsArrayInstance = new object?[inAtoms.Length - i];
+                if (i < inAtoms.Length)
+                {
+                    paramsArrayInstance = new object?[inAtoms.Length - i];
+                }
+                else
+                {
+                    paramsArrayInstance = Array.Empty<object?>();
+                }
                 break;
             }
             else if (!arguments[i].IsOptional)

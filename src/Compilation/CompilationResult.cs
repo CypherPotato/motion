@@ -51,13 +51,16 @@ public sealed class CompilationResult
         if (!Success) throw Error!;
         var context = Runtime.ExecutionContext.CreateBaseContext(this);
 
-        context.ImportLibrary(new Runtime.StandardLibrary.StdCommon());
-        context.ImportLibrary(new Runtime.StandardLibrary.StdString());
-        context.ImportLibrary(new Runtime.StandardLibrary.StdMath());
-        context.ImportLibrary(new Runtime.StandardLibrary.StdRandom());
-        context.ImportLibrary(new Runtime.StandardLibrary.StdCType());
-        //context.ImportLibrary(new Runtime.StandardLibrary.StdAtoms());
-
+        if (Options.StandardLibraries.HasFlag(CompilerStandardLibrary.StdCommon))
+            context.ImportLibrary(new Runtime.StandardLibrary.StdCommon());
+        if (Options.StandardLibraries.HasFlag(CompilerStandardLibrary.StdString))
+            context.ImportLibrary(new Runtime.StandardLibrary.StdString());
+        if (Options.StandardLibraries.HasFlag(CompilerStandardLibrary.StdMath))
+            context.ImportLibrary(new Runtime.StandardLibrary.StdMath());
+        if (Options.StandardLibraries.HasFlag(CompilerStandardLibrary.StdRandom))
+            context.ImportLibrary(new Runtime.StandardLibrary.StdRandom());
+        if (Options.StandardLibraries.HasFlag(CompilerStandardLibrary.StdConvertType))
+            context.ImportLibrary(new Runtime.StandardLibrary.StdCType());
         if (Options.StandardLibraries.HasFlag(CompilerStandardLibrary.StdConsole))
             context.ImportLibrary(new Runtime.StandardLibrary.StdConsole());
 
