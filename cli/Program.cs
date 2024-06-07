@@ -233,6 +233,14 @@ internal class Program
                         format = Theme.Symbol;
                     }
                 }
+                else if (item.Type is SyntaxItemType.ClrSymbol)
+                {
+                    format = Theme.ClrSymbol;
+                }
+                else if (item.Type is SyntaxItemType.ClrType)
+                {
+                    format = Theme.ClrType;
+                }
                 else if (item.Type is SyntaxItemType.Keyword)
                 {
                     format = Theme.Keyword;

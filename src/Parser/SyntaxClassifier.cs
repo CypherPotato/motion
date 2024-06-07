@@ -291,6 +291,14 @@ public sealed class SyntaxClassifier : IDisposable
         {
             return new SyntaxItem(content, SyntaxItemType.Symbol, expressionDepth, snapshot);
         }
+        else if (AtomBase.IsClrInstanceSymbolToken(content))
+        {
+            return new SyntaxItem(content, SyntaxItemType.ClrSymbol, expressionDepth, snapshot);
+        }
+        else if (AtomBase.IsTypeLiteral(content))
+        {
+            return new SyntaxItem(content, SyntaxItemType.ClrType, expressionDepth, snapshot);
+        }
         else if (AtomBase.IsKeywordToken(content))
         {
             return new SyntaxItem(content, SyntaxItemType.Keyword, expressionDepth, snapshot);

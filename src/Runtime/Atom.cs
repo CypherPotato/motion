@@ -61,7 +61,7 @@ public struct Atom
     /// <param name="keyword">The keyword value.</param>
     public bool HasKeyword(string keyword)
     {
-        return _ref.SingleKeywords.Contains(keyword, StringComparer.InvariantCultureIgnoreCase);
+        return _ref.SingleKeywords.Contains(keyword, AtomBase.SymbolComparer);
     }
 
     internal static AtomType AtomTypeFromTokenType(TokenType type)
@@ -78,6 +78,8 @@ public struct Atom
             TokenType.Symbol => AtomType.Symbol,
             TokenType.Keyword => AtomType.Keyword,
             TokenType.Operator => AtomType.Operator,
+            TokenType.ClrSymbol => AtomType.ClrSymbol,
+            TokenType.ClrType => AtomType.ClrType,
             _ => AtomType.Null
         };
     }
@@ -473,6 +475,25 @@ public struct Atom
         }
         ResetTokenValue();
         return b;
+    }
+
+    /// <summary>
+    /// Gets the value of this atom and expects it to be an non-null <typeparamref name="T"/>.
+    /// </summary>
+    /// <typeparam name="T">The type of the atom.</typeparam>
+    /// <returns>An non-null <typeparamref name="T"/> object.</returns>
+    public T GetObject<T>() where T : notnull
+    {
+        object obj = GetObject();
+        if (obj is T t)
+        {
+            ResetTokenValue();
+            return t;
+        }
+        else
+        {
+            return ThrowInvalidTkType<T>(typeof(T).Name);
+        }
     }
 
     /// <summary>

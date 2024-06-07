@@ -63,6 +63,7 @@ internal static class Interactive
             Libraries = references,
 
             StandardLibraries = CompilerStandardLibrary.All,
+            ExposeCLR = true,
 
             EnumExports = new EnumExport[]
             {

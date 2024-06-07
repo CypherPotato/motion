@@ -28,6 +28,11 @@ public class CompilerOptions
     public ICollection<IMotionLibrary> Libraries { get; set; } = new List<IMotionLibrary>();
 
     /// <summary>
+    /// Gets or sets an boolean indicating if the Motion code can access CLR types and members.
+    /// </summary>
+    public bool ExposeCLR { get; set; }
+
+    /// <summary>
     /// Gets or sets an collection of <see cref="EnumExport"/> used to export enum members.
     /// </summary>
     public ICollection<EnumExport> EnumExports { get; set; } = new List<EnumExport>();

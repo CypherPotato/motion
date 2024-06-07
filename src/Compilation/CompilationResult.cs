@@ -64,6 +64,9 @@ public sealed class CompilationResult
         if (Options.StandardLibraries.HasFlag(CompilerStandardLibrary.StdConsole))
             context.ImportLibrary(new Runtime.StandardLibrary.StdConsole());
 
+        if (Options.ExposeCLR)
+            context.ImportLibrary(new Runtime.StandardLibrary.StdClr());
+
         foreach (IMotionLibrary lib in Options.Libraries)
         {
             context.ImportLibrary(lib);

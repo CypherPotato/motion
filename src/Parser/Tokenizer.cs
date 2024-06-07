@@ -558,6 +558,20 @@ class Tokenizer : IDisposable
                 Content = content
             };
         }
+        else if (AtomBase.IsClrInstanceSymbolToken(content))
+        {
+            return new AtomBase(snapshot, TokenType.ClrSymbol)
+            {
+                Content = content.Substring(1)
+            };
+        }
+        else if (AtomBase.IsTypeLiteral(content))
+        {
+            return new AtomBase(snapshot, TokenType.ClrType)
+            {
+                Content = content.Substring(1)
+            };
+        }
         else if (AtomBase.IsKeywordToken(content))
         {
             return new AtomBase(snapshot, TokenType.Keyword)

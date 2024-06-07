@@ -53,6 +53,16 @@ public enum AtomType
     Symbol,
 
     /// <summary>
+    /// Represents an <see cref="Atom"/> which holds an CLR symbol.
+    /// </summary>
+    ClrSymbol,
+
+    /// <summary>
+    /// Represents an <see cref="Atom"/> which holds an CLR type literal.
+    /// </summary>
+    ClrType,
+
+    /// <summary>
     /// Represents an keyword <see cref="Atom"/>.
     /// </summary>
     Keyword,

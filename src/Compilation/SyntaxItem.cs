@@ -121,6 +121,16 @@ public enum SyntaxItemType
     Symbol,
 
     /// <summary>
+    /// Represents an CLR symbol.
+    /// </summary>
+    ClrSymbol,
+
+    /// <summary>
+    /// Represents an CLR type literal.
+    /// </summary>
+    ClrType,
+
+    /// <summary>
     /// Represents an keyword.
     /// </summary>
     Keyword,

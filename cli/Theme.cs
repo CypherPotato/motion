@@ -17,6 +17,8 @@ public class Theme
     public ConsoleFormat NumberLiteral { get; set; } = new ConsoleFormat(AnsiColor.Rgb(185, 250, 225));
     public ConsoleFormat FunctionName { get; set; } = new ConsoleFormat(AnsiColor.Rgb(255, 233, 194));
     public ConsoleFormat Symbol { get; set; } = new ConsoleFormat(AnsiColor.Rgb(216, 235, 240));
+    public ConsoleFormat ClrSymbol { get; set; } = new ConsoleFormat(AnsiColor.Rgb(158, 191, 103));
+    public ConsoleFormat ClrType { get; set; } = new ConsoleFormat(AnsiColor.Rgb(82, 247, 247));
     public ConsoleFormat Keyword { get; set; } = new ConsoleFormat(AnsiColor.Rgb(237, 207, 255));
     public ConsoleFormat Comment { get; set; } = new ConsoleFormat(AnsiColor.Rgb(106, 173, 127));
     public ConsoleFormat EnumLiteral { get; set; } = new ConsoleFormat(AnsiColor.Rgb(206, 245, 108));

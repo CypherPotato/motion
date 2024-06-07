@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
@@ -9,6 +10,8 @@ using System.Threading.Tasks;
 using Motion.Compilation;
 using Motion.Parser;
 using Motion.Runtime.StandardLibrary;
+
+#pragma warning disable IL3050 
 
 namespace Motion.Runtime;
 
@@ -442,6 +445,52 @@ public class ExecutionContext
                 case TokenType.Keyword:
                     throw new MotionException("this atom cannot be evaluated to an value without an expression.", t.Location, null);
 
+                case TokenType.ClrType:
+                    if (!compilerResult.Options.ExposeCLR)
+                    {
+                        throw new MotionException("CLR access is not allowed in this context.", t.Location, null);
+                    }
+
+                    string expression = t.Content!.ToString()!;
+                    string[] parts = expression.Split('/');
+                    Type? rType;
+
+                    if (parts.Length > 1)
+                    {
+                        rType = TypeHelper.ResolveType(parts[0] + '`' + (parts.Length - 1));
+                    }
+                    else
+                    {
+                        rType = TypeHelper.ResolveType(parts[0]);
+                    }
+
+                    if (rType is null)
+                    {
+                        throw new MotionException($"unknown or undefined type '{parts[0]}'.", t.Location, null);
+                    }
+
+                    if (parts.Length > 1)
+                    {
+                        Type[] genericTypes = new Type[parts.Length - 1];
+                        for (int i = 0; i < genericTypes.Length; i++)
+                        {
+                            Type? gType = TypeHelper.ResolveType(parts[i + 1]);
+
+                            if (gType is null)
+                            {
+                                throw new MotionException($"unknown or undefined generic type '{parts[i]}' at position {i + 1}.", t.Location, null);
+                            }
+                            else
+                            {
+                                genericTypes[i] = gType;
+                            }
+                        }
+
+                        rType = rType.MakeGenericType(genericTypes);
+                    }
+
+                    return rType;
+
                 case TokenType.Symbol:
                     {
                         string name = t.Content!.ToString()!;
@@ -500,7 +549,7 @@ public class ExecutionContext
                         else
                         {
                             var firstChildren = t.Children[0];
-                            if (firstChildren.Type != TokenType.Symbol && firstChildren.Type != TokenType.Operator)
+                            if (firstChildren.Type is not TokenType.Symbol and not TokenType.ClrSymbol and not TokenType.Operator)
                             {
                                 // run the last value
                                 for (int i = 0; i < count; i++)
@@ -514,6 +563,59 @@ public class ExecutionContext
                                         EvaluateTokenItem(t.Children[i], t);
                                     }
                                 }
+                            }
+                            else if (firstChildren.Type == TokenType.ClrSymbol)
+                            {
+                                if (!compilerResult.Options.ExposeCLR)
+                                {
+                                    throw new MotionException("CLR access is not allowed in this context.", t.Location, null);
+                                }
+                                if (t.Children.Length == 1)
+                                {
+                                    throw new MotionException("object expected.", t.Location, null);
+                                }
+
+                                string symbol = firstChildren.Content!.ToString()!;
+                                object? value = EvaluateTokenItem(t.Children[1], t);
+
+                                if (value is null)
+                                {
+                                    throw new MotionException("null reference.", t.Children[1].Location, null);
+                                }
+
+                                List<Type?> typeHints = new List<Type?>(t.Children.Length);
+
+                                for (int i = 2; i < t.Children.Length; i++)
+                                {
+                                    var child = t.Children[i];
+                                    Type? childType = TypeHelper.ResolveTypeByAtom(ref child);
+                                    typeHints.Add(childType);
+                                }
+
+                                Type objType = value.GetType();
+
+                                BindingFlags bflag =
+                                      BindingFlags.Public
+                                    | BindingFlags.Instance
+                                    | BindingFlags.IgnoreCase
+                                    ;
+
+                                MethodInfo[] methods = objType.GetMethods(bflag);
+                                MethodInfo? publicMethod = TypeHelper.FindMatchingMethodInfo(symbol, methods, typeHints, t.Children.Length == 2);
+
+                                if (publicMethod is null)
+                                {
+                                    if (typeHints.Count == 0)
+                                    {
+                                        throw new MotionException($"'{objType.FullName}' does not contain a public method for '{symbol}'.", t.Children[1].Location, null);
+                                    }
+                                    else
+                                    {
+                                        throw new MotionException($"'{objType.FullName}' does not contain a public method for '{symbol}' that accepts the parameters:\n- {string.Join("- ", typeHints.Select(s => s.FullName + "\n"))}", t.Children[1].Location, null);
+                                    }
+                                }
+
+                                return LibraryHelper.InvokeMethodInfo(publicMethod, new Atom(t, parent, this), value);
                             }
 
                             expSymbolLocation = firstChildren.Location;

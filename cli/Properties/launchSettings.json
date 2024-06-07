@@ -1,8 +1,7 @@
 {
   "profiles": {
     "MotionCLI": {
-      "commandName": "Project",
-      "commandLineArgs": "-r \"C:\\Code\\repos\\MotionTinyComponents\\bin\\Debug\\net8.0\\MotionTinyComponents.dll\""
+      "commandName": "Project"
     },
     "Profile 1": {
       "commandName": "Project",

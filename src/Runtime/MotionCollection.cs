@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using Motion.Parser;
+using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Motion.Runtime;
@@ -9,7 +10,7 @@ namespace Motion.Runtime;
 /// <typeparam name="TValue">The type of items.</typeparam>
 public class MotionCollection<TValue> : IDictionary<string, TValue>
 {
-    internal Dictionary<string, TValue> _m = new(StringComparer.CurrentCultureIgnoreCase);
+    internal Dictionary<string, TValue> _m = new(AtomBase.SymbolComparer);
     private string? _namespace;
 
     /// <summary>

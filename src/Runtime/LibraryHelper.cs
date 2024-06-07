@@ -29,9 +29,14 @@ public static class LibraryHelper
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     internal static object? LibraryConverter(Delegate method, Atom atom)
     {
+        return InvokeMethodInfo(method.GetMethodInfo(), atom, method.Target);
+    }
+
+    internal static object? InvokeMethodInfo(MethodInfo methodInfo, Atom atom, object? instance)
+    {
         var firstChild = atom.GetAtom(0);
-        var methodInfo = method.GetMethodInfo();
-        int paramOffset = 0;
+        int paramOffset = 0,
+            skipAtoms = 0;
         List<object?> parameterObjects = new List<object?>();
         ParameterInfo[] arguments = methodInfo.GetParameters();
 
@@ -39,12 +44,22 @@ public static class LibraryHelper
             && arguments[0].ParameterType == typeof(Atom)
             && string.Compare(arguments[0].Name, "self", true) == 0)
         {
-            return method.DynamicInvoke(new object?[] { atom });
+            return methodInfo.Invoke(instance, new object?[] { atom });
         }
 
-        object?[]? paramsArrayInstance = null;
+        ArrayList? paramsArrayInstance = null;
         int paramsIndex = -1;
-        object?[] inAtoms = new object[atom.ItemCount - 1];
+
+        if (atom._ref.Children[0].Type == Parser.TokenType.ClrSymbol)
+        {
+            skipAtoms = 2;
+        }
+        else
+        {
+            skipAtoms = 1;
+        }
+
+        object?[] inAtoms = new object[atom.ItemCount - skipAtoms];
         int requiredParams = 0;
 
         for (int i = 0; i < arguments.Length; i++)
@@ -64,14 +79,7 @@ public static class LibraryHelper
             else if (param.GetCustomAttribute<ParamArrayAttribute>() != null)
             {
                 paramsIndex = i;
-                if (i < inAtoms.Length)
-                {
-                    paramsArrayInstance = new object?[inAtoms.Length - i];
-                }
-                else
-                {
-                    paramsArrayInstance = Array.Empty<object?>();
-                }
+                paramsArrayInstance = new ArrayList(inAtoms.Length);
                 break;
             }
             else if (!arguments[i].IsOptional)
@@ -91,24 +99,20 @@ public static class LibraryHelper
 
         for (int i = 0; i < inAtoms.Length; i++)
         {
-            if (paramsIndex >= 0 && i >= paramsIndex)
+            if (paramsIndex >= 0 && paramOffset + i >= paramsIndex)
             {
-                var at = atom.GetAtom(i + 1);
+                var at = atom.GetAtom(i + skipAtoms);
                 object? result = at.Nullable()?.GetObject();
 
                 // is it the last parameter, and is the last parameter an parameter array, and is the object
                 // an collection?
                 if (result is ICollection icol && i == paramsIndex && i == inAtoms.Length - 1)
                 {
-                    if (paramsArrayInstance!.Length < icol.Count)
-                    {
-                        Array.Resize(ref paramsArrayInstance, icol.Count);
-                    }
-                    icol.CopyTo(paramsArrayInstance, 0);
+                    paramsArrayInstance?.AddRange(icol);
                 }
                 else
                 {
-                    paramsArrayInstance![i - paramsIndex] = result;
+                    paramsArrayInstance?.Add(result);
                 }
             }
             else
@@ -119,7 +123,7 @@ public static class LibraryHelper
                 }
 
                 var argType = arguments[paramOffset + i].ParameterType;
-                var at = atom.GetAtom(i + 1);
+                var at = atom.GetAtom(i + skipAtoms);
                 object? result;
 
                 if (argType == typeof(Symbol))
@@ -141,13 +145,14 @@ public static class LibraryHelper
 
                 parameterObjects.Add(result);
             }
+            ;
         }
 
         if (paramsIndex >= 0)
         {
-            parameterObjects.Add(paramsArrayInstance);
+            parameterObjects.Add(paramsArrayInstance?.ToArray());
         }
 
-        return method.DynamicInvoke(parameterObjects.ToArray());
+        return methodInfo.Invoke(instance, parameterObjects.ToArray());
     }
 }

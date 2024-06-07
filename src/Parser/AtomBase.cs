@@ -23,12 +23,16 @@ struct AtomBase
 
     public const char Ch_CharacterLiteral = '\\';
 
+    public const char Ch_ClrSymbolToken = '.';
+    public const char Ch_ClrTypeToken = '@';
+
     public const char Ch_CommentChar = ';';
 
     public static readonly char[] AllowedFirstSymbolChars = new char[] {
         '%', '$'
     };
 
+    public static readonly StringComparer SymbolComparer = StringComparer.OrdinalIgnoreCase;
     public static readonly AtomBase Undefined = new AtomBase(default, TokenType.Undefined);
 
     public TextInterpreterSnapshot Location;
@@ -81,6 +85,46 @@ struct AtomBase
         Location = location;
     }
 
+    public static bool IsTypeLiteral(string content)
+    {
+        if (content.Length < 2) return false;
+        char firstChar = content[0];
+
+        if (firstChar != Ch_ClrTypeToken)
+        {
+            return false;
+        }
+
+        for (int i = 1; i < content.Length; i++)
+        {
+            char ch = content[i];
+            if (ch != '_' && ch != '.' && ch != '/' && !char.IsLetterOrDigit(ch))
+                return false;
+        }
+
+        return true;
+    }
+
+    public static bool IsClrInstanceSymbolToken(string content)
+    {
+        if (content.Length < 2) return false;
+        char firstChar = content[0];
+
+        if (firstChar != Ch_ClrSymbolToken)
+        {
+            return false;
+        }
+
+        for (int i = 1; i < content.Length; i++)
+        {
+            char ch = content[i];
+            if (ch != '_' && !char.IsLetterOrDigit(ch))
+                return false;
+        }
+
+        return true;
+    }
+
     public static bool IsCharacterToken(string content)
     {
         if (content.Length < 2) return false;
@@ -89,11 +133,6 @@ struct AtomBase
         if (firstChar != Ch_CharacterLiteral)
         {
             return false;
-        }
-        for (int i = 1; i < content.Length; i++)
-        {
-            if (TextInterpreter.IsWhiteSpace(content[i]))
-                return false;
         }
 
         return true;
@@ -112,7 +151,7 @@ struct AtomBase
         for (int i = 1; i < content.Length; i++)
         {
             char ch = content[i];
-            bool cond = char.IsLetterOrDigit(ch) || ch == '_' || ch == '-' || ch == '*';
+            bool cond = char.IsLetterOrDigit(ch) || ch == '_' || ch == '-' || ch == '*' || ch == '.';
             if (!cond) return false;
         }
 
@@ -241,5 +280,7 @@ internal enum TokenType
     // represents an literal symbol or identifier
     Symbol = 70,
     Keyword = 71,
-    Operator = 73
+    Operator = 73,
+    ClrSymbol = 74,
+    ClrType = 75
 }
