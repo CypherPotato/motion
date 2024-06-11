@@ -615,7 +615,7 @@ public class ExecutionContext
                                     }
                                     else
                                     {
-                                        throw new MotionException($"'{objType.FullName}' does not contain a public method for '{symbol}' that accepts the parameters:\n- {string.Join("- ", typeHints.Select(s => s.FullName + "\n"))}", t.Children[1].Location, null);
+                                        throw new MotionException($"'{objType.FullName}' does not contain a public method for '{symbol}' that accepts the parameters:\n- {string.Join("- ", typeHints.Select(s => s?.FullName + "\n"))}", t.Children[1].Location, null);
                                     }
                                 }
 

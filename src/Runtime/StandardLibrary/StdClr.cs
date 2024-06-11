@@ -125,7 +125,7 @@ internal class StdClr : IMotionLibrary
             }
             else
             {
-                throw new MotionException($"'{type.FullName}' does not contain a public static method for '{name}' that accepts the parameters:\n- {string.Join("- ", typeHints.Select(s => s.FullName + "\n"))}", t.Children[1].Location, null);
+                throw new MotionException($"'{type.FullName}' does not contain a public static method for '{name}' that accepts the parameters:\n- {string.Join("- ", typeHints.Select(s => s?.FullName + "\n"))}", t.Children[1].Location, null);
             }
         }
 
