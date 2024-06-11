@@ -93,6 +93,12 @@ public struct Atom
     }
 
     /// <summary>
+    /// Gets an boolean indicating if this <see cref="Atom"/> represents an valid atom in the parent atom or if
+    /// is an undefined (non existent) atom.
+    /// </summary>
+    public bool IsUndefined { get => _ref.Type == TokenType.Undefined; }
+
+    /// <summary>
     /// Gets all keywords defined in this atom.
     /// </summary>
     public readonly string[] Keywords { get => _ref.SingleKeywords; }
@@ -516,5 +522,13 @@ public struct Atom
         {
             yield return o;
         }
+    }
+
+    /// <summary>
+    /// Gets an <see cref="AtomReader"/> which points to this <see cref="Atom"/>.
+    /// </summary>
+    public AtomReader GetReader()
+    {
+        return new AtomReader(this);
     }
 }

@@ -141,9 +141,8 @@ internal class BooleanOperators : IMotionLibrary
 
     object? Cond(Atom self)
     {
-        for (int i = 1; i < self.ItemCount; i++)
+        foreach (Atom exp in self.GetReader())
         {
-            Atom exp = self.GetAtom(i);
             bool cond = exp.GetAtom(0).Nullable()?.GetBoolean() == true;
             if (cond)
             {

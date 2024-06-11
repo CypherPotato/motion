@@ -63,12 +63,7 @@ internal static class Interactive
             Libraries = references,
 
             StandardLibraries = CompilerStandardLibrary.All,
-            ExposeCLR = true,
-
-            EnumExports = new EnumExport[]
-            {
-                EnumExport.Create<DayOfWeek>("day")
-            }
+            ExposeCLR = true
         };
 
         Motion.Runtime.ExecutionContext context;

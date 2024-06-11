@@ -517,6 +517,10 @@ public class ExecutionContext
                         {
                             return varValue;
                         }
+                        else if (compilerResult.Options.UnresolvedMethodFallback is MotionMethod fallback)
+                        {
+                            return fallback(new Atom(parent, AtomBase.Undefined, this));
+                        }
                         else
                         {
                             throw new MotionException("unresolved variable, constant or method: " + name, t.Location, null);
@@ -641,6 +645,10 @@ public class ExecutionContext
                                 {
                                     result = userFuncValue!.Invoke(t, Fork(ExecutionContextScope.Function));
                                     return result;
+                                }
+                                else if (compilerResult.Options.UnresolvedMethodFallback is MotionMethod mfallback)
+                                {
+                                    return mfallback(new Atom(t, parent, this));
                                 }
                                 else
                                 {

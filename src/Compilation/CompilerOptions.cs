@@ -33,6 +33,12 @@ public class CompilerOptions
     public bool ExposeCLR { get; set; }
 
     /// <summary>
+    /// Gets or sets the fallback method when an method, variable or constant couldn't be
+    /// evaluated.
+    /// </summary>
+    public MotionMethod? UnresolvedMethodFallback { get; set; }
+
+    /// <summary>
     /// Gets or sets an collection of <see cref="EnumExport"/> used to export enum members.
     /// </summary>
     public ICollection<EnumExport> EnumExports { get; set; } = new List<EnumExport>();

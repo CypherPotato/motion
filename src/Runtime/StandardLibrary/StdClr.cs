@@ -23,6 +23,15 @@ internal class StdClr : IMotionLibrary
         context.Methods.Add("icall", InvokeStatic);
         context.Methods.Add("get-field", GetField);
         context.Methods.Add("set-field", SetField);
+        context.Methods.Add("export-enum", ExportEnum);
+    }
+
+    public void ExportEnum(Atom self)
+    {
+        var type = self.GetAtom(1).GetObject<Type>();
+        var alias = self.HasKeyword("as") ? self.GetAtom("as").GetSymbol() : null;
+
+        TypeHelper.ExportEnum(type, alias, self.Context.Global);
     }
 
     public object? CreateInstance(Atom self, Type type, params object?[] args)

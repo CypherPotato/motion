@@ -63,7 +63,6 @@ public sealed class CompilationResult
             context.ImportLibrary(new Runtime.StandardLibrary.StdCType());
         if (Options.StandardLibraries.HasFlag(CompilerStandardLibrary.StdConsole))
             context.ImportLibrary(new Runtime.StandardLibrary.StdConsole());
-
         if (Options.ExposeCLR)
             context.ImportLibrary(new Runtime.StandardLibrary.StdClr());
 
@@ -74,17 +73,7 @@ public sealed class CompilationResult
 
         foreach (EnumExport export in Options.EnumExports)
         {
-            var names = Enum.GetNames(export.ExportType);
-            var values = Enum.GetValues(export.ExportType);
-
-            for (int i = 0; i < names.Length; i++)
-            {
-                string n = names[i];
-                object v = values.GetValue(i)!;
-
-                string prefix = (export.Alias ?? export.ExportType.Name) + ".";
-                context.SetConstant(prefix + n, v);
-            }
+            TypeHelper.ExportEnum(export.ExportType, export.Alias, context);
         }
 
         return context;

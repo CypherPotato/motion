@@ -12,6 +12,39 @@ internal class ComKeys : IMotionLibrary
         context.Methods.Add("type-of", NGetType);
         context.Methods.Add("exit", Exit);
         context.Methods.Add("coalesce", Coalesce);
+        context.Methods.Add("whennil", WhenNil);
+    }
+
+    object? WhenNil(Atom self)
+    {
+        var v = self.GetAtom(1);
+
+        if (v.Type == AtomType.Symbol && !self.Context.IsSymbolDefined(v.GetSymbol()))
+        {
+            ;
+        }
+        else
+        {
+            object? o = v.Nullable()?.GetObject();
+            if (self.HasKeyword("or-empty"))
+            {
+                if (!string.IsNullOrEmpty(o?.ToString()))
+                    return o;
+            }
+            else if (o is not null)
+            {
+                return o;
+            }
+        }
+
+        if (self.ItemCount == 3)
+        {
+            return self.GetAtom(2).Nullable()?.GetObject();
+        }
+        else
+        {
+            return null;
+        }
     }
 
     dynamic Increment(Atom self, Symbol name, dynamic value)
@@ -24,8 +57,6 @@ internal class ComKeys : IMotionLibrary
         return o;
     }
 
-    
-
     Type NGetType(object value)
     {
         return value.GetType();
@@ -36,12 +67,15 @@ internal class ComKeys : IMotionLibrary
         throw new MotionExitException(value);
     }
 
-    object? Coalesce(params object?[] values)
+    object? Coalesce(Atom self)
     {
-        for (int i = 0; i < values.Length; i++)
+        foreach (Atom t in self.GetReader())
         {
-            if (values[i] is not null)
-                return values[i];
+            var value = t.Nullable()?.GetObject();
+            if (value is not null)
+            {
+                return value;
+            }
         }
         return null;
     }

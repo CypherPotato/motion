@@ -10,6 +10,7 @@ using System.Xml.Linq;
 namespace Motion.Runtime;
 
 #pragma warning disable IL2026
+#pragma warning disable IL3050
 
 internal static class TypeHelper
 {
@@ -30,6 +31,21 @@ internal static class TypeHelper
                 }
                 typeLoadCache.TryAdd(t.FullName ?? t.Name, t);
             }
+        }
+    }
+
+    public static void ExportEnum(Type type, string? alias, ExecutionContext context)
+    {
+        var names = Enum.GetNames(type);
+        var values = Enum.GetValues(type);
+
+        for (int i = 0; i < names.Length; i++)
+        {
+            string n = names[i];
+            object v = values.GetValue(i)!;
+
+            string prefix = (alias ?? type.Name) + ".";
+            context.SetConstant(prefix + n, v);
         }
     }
 
