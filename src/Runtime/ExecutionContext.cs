@@ -416,7 +416,7 @@ public class ExecutionContext
         return Task.Run(Evaluate);
     }
 
-    internal object? EvaluateTokenItem(AtomBase t, AtomBase parent)
+    internal object? EvaluateTokenItem(in AtomBase t, in AtomBase parent)
     {
         object? result = null;
         Exception? exception = null;

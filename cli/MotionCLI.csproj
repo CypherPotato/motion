@@ -10,11 +10,11 @@
 
 	<ItemGroup>
 		<PackageReference Include="CypherPotato.CommandLine" Version="1.0.0" />
-		<PackageReference Include="CypherPotato.LightJson" Version="0.9.0-beta3" />
 		<PackageReference Include="Spectre.Console.Json" Version="0.49.1" />
 	</ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\..\LightJsonMotionLib\LightJsonMotionLib.csproj" />
 		<ProjectReference Include="..\..\PrettyPrompt\src\PrettyPrompt\PrettyPrompt.csproj" />
 		<ProjectReference Include="..\src\MotionV2.csproj" />
 	</ItemGroup>

@@ -1,16 +1,12 @@
-﻿using Motion;
-using PrettyPrompt.Highlighting;
-using PrettyPrompt;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static MotionCLI.Program;
+﻿using LightJsonMotionLib;
+using Motion;
 using Motion.Compilation;
 using Motion.Runtime;
+using PrettyPrompt;
+using PrettyPrompt.Highlighting;
+using System.Diagnostics;
 using System.Reflection;
+using static MotionCLI.Program;
 
 namespace MotionCLI;
 
@@ -23,7 +19,11 @@ internal static class Interactive
         Console.WriteLine("To get help, type /help.\n");
 
         // resolve references
-        List<IMotionLibrary> references = new List<IMotionLibrary>();
+        List<IMotionLibrary> references = new List<IMotionLibrary>()
+        {
+            new LHtml(),
+            new LJson()
+        };
 
         if (Program.References.Length > 0)
         {

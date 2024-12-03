@@ -20,7 +20,7 @@ public class CompilerOptions
     /// <summary>
     /// Gets or sets the default enabled standard libraries to the Motion compiler.
     /// </summary>
-    public CompilerStandardLibrary StandardLibraries { get; set; }
+    public CompilerStandardLibrary StandardLibraries { get; set; } = CompilerStandardLibrary.AllSafe;
 
     /// <summary>
     /// Gets or sets an collection of <see cref="IMotionLibrary"/> used to compile this code.

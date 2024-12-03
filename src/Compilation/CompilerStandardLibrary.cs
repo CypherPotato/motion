@@ -1,11 +1,4 @@
-﻿using Motion.Runtime.StandardLibrary;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Motion.Compilation;
+﻿namespace Motion.Compilation;
 
 /// <summary>
 /// Represents standard built-in Motion libraries.
@@ -44,15 +37,21 @@ public enum CompilerStandardLibrary
     StdConvertType = 1 << 6,
 
     /// <summary>
+    /// Represents the standard environment library.
+    /// </summary>
+    StdEnvironment = 1 << 7,
+
+    /// <summary>
     /// Represents all the standard libraries.
     /// </summary>
-    All = 
+    All =
         StdCommon
         | StdString
         | StdMath
         | StdRandom
         | StdConsole
-        | StdConvertType,
+        | StdConvertType
+        | StdEnvironment,
 
     /// <summary>
     /// Represents all safe standard libraries.

@@ -1,11 +1,5 @@
 ﻿using Motion.Parser;
-using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Motion.Runtime;
 
@@ -102,6 +96,11 @@ public struct Atom
     /// Gets all keywords defined in this atom.
     /// </summary>
     public readonly string[] Keywords { get => _ref.SingleKeywords; }
+
+    /// <summary>
+    /// Gets the current atom defined keyword.
+    /// </summary>
+    public string? Keyword { get => _ref.Keyword; }
 
     /// <summary>
     /// Gets the number of child atoms contained in this atom.

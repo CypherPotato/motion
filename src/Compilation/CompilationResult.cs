@@ -1,11 +1,6 @@
-﻿using Motion.Parser;
+﻿using System.Diagnostics.CodeAnalysis;
+using Motion.Parser;
 using Motion.Runtime;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Motion.Compilation;
 
@@ -63,6 +58,8 @@ public sealed class CompilationResult
             context.ImportLibrary(new Runtime.StandardLibrary.StdCType());
         if (Options.StandardLibraries.HasFlag(CompilerStandardLibrary.StdConsole))
             context.ImportLibrary(new Runtime.StandardLibrary.StdConsole());
+        if (Options.StandardLibraries.HasFlag(CompilerStandardLibrary.StdEnvironment))
+            context.ImportLibrary(new Runtime.StandardLibrary.StdEnv());
         if (Options.ExposeCLR)
             context.ImportLibrary(new Runtime.StandardLibrary.StdClr());
 
